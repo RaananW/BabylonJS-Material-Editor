@@ -1,0 +1,255 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" data-framework="typescript">
+<head>
+    <meta charset="utf-8" />
+    <title>TypeScript HTML App</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="vendor/ui-color-picker.css" type="text/css" />
+    <link rel="stylesheet" href="vendor/slider.css" type="text/css" />
+    <link rel="stylesheet" href="Content/main.css" type="text/css" />
+    <script src="vendor/babylon.1.14-debug.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.28/angular.min.js"></script>
+    <script src="https://code.angularjs.org/1.2.28/angular-touch.min.js"></script>
+    <script src="Scripts/angular-ui/ui-bootstrap.js"></script>
+    <script src="vendor/ui-color-picker.js"></script>
+    <script src="vendor/slider.js"></script>
+    <script src="application.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="col-md-12 row" ng-controller="TextureController as textureController">
+                    <h1>Textures</h1>
+                    <tabset>
+                        <tab ng-repeat="texture in textures" heading="{{texture.title}}" active="tab.active" disabled="tab.disabled">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <texture-image tex="texture" on-update-texture="updateTexture($type)"></texture-image>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="col-md-12">
+                                        <h4>General</h4>
+                                        <div class="btn-group">
+                                            <label class="btn btn-primary" ng-model="texture.isEnabled" ng-change="updateTexture(texture.type)" btn-checkbox>Enabled</label>
+                                            <label class="btn btn-primary" ng-model="texture.hasAlpha" ng-change="updateTexture(texture.type)" btn-checkbox>Has Alpha</label>
+                                            <label class="btn btn-primary" ng-model="texture.getAlphaFromRGB" ng-change="updateTexture(texture.type)" btn-checkbox>Get Alpha from RGB</label>
+                                        </div>
+                                    </div>
+                                    <hr />
+                                    <div class="col-md-12">
+                                        <h4>Coordinates Mode</h4>
+                                        <div class="btn-group" role="group" aria-label="...">
+                                            <button type="button" ng-model="texture.coordinatesMode" ng-change="updateTexture(texture.type)" btn-radio="0" class="btn btn-default">Explicit</button>
+                                            <button type="button" ng-model="texture.coordinatesMode" ng-change="updateTexture(texture.type)" btn-radio="1" class="btn btn-default">Spherical</button>
+                                            <button type="button" ng-model="texture.coordinatesMode" ng-change="updateTexture(texture.type)" btn-radio="2" class="btn btn-default">Planar</button>
+                                            <button type="button" ng-model="texture.coordinatesMode" ng-change="updateTexture(texture.type)" btn-radio="3" class="btn btn-default">Cube(!)</button>
+                                            <button type="button" ng-model="texture.coordinatesMode" ng-change="updateTexture(texture.type)" btn-radio="4" class="btn btn-default">Projection</button>
+                                        </div>
+                                    </div>
+                                    <hr />
+                                    <div class="col-md-12">
+                                        <h4>U/V/W Settings</h4>
+                                        <div class="col-md-6">
+                                            <form class="form-horizontal" role="form">
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">U Scale</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="uScale" ng-model="texture.uScale" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">V Scale</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="vScale" ng-model="texture.vScale" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">U Offset</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="uOffset" ng-model="texture.uOffset" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">V Offset</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="vOffset" ng-model="texture.vOffset" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <form class="form-horizontal" role="form">
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">U Angle</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="U Angle" ng-model="texture.uAng" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">V Angle</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" placeholder="V Angle" ng-model="texture.vAng" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">Level</label>
+                                                    <div class="col-sm-6">
+                                                        <slider ng-model="texture.level" ng-mousemove="updateTexture(texture.type)"
+                                                                floor="0"
+                                                                ceiling="1"
+                                                                step="0.01"
+                                                                precision="2">
+                                                        </slider>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-sm-6">Coordinates Index</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="number" class="form-control" laceholder="coordinates index" ng-model="texture.coordinatesIndex" ng-change="updateTexture(texture.type)">
+                                                    </div>
+                                                </div>
+
+                                            </form>
+                                        </div>
+                                        <div class="btn-group">
+                                            <label class="btn btn-primary" ng-model="texture.wrapU" ng-change="updateTexture(texture.type)" btn-checkbox>Wrap U</label>
+                                            <label class="btn btn-primary" ng-model="texture.wrapV" ng-change="updateTexture(texture.type)" btn-checkbox>Wrap V</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </tab>
+                    </tabset>
+                </div>
+                <div class="col-md-12" ng-controller="MaterialController as materialController">
+                    <h1>Material Properties</h1>
+                    <h4>Flags</h4>
+                    <div class="btn-group">
+                        <label class="btn btn-primary" ng-model="material.wireframe" btn-checkbox>Wireframe</label>
+                        <label class="btn btn-primary" ng-model="material.backFaceCulling" btn-checkbox>Back Face Culling</label>
+                        <label class="btn btn-primary" ng-model="material.useAlphaFromDiffuseTexture" btn-checkbox>Alpha From Diffuse Texture</label>
+                        <label class="btn btn-primary" ng-model="material.useSpecularOverAlpha" btn-checkbox>Specular Over Alpha</label>
+                    </div>
+
+                    <h4>Colors</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form class="form-horizontal" role="form">
+                                <div class="form-group">
+                                    <label class="col-sm-6">Diffuse</label>
+                                    <div class="col-sm-6">
+                                        <input colorpicker class="form-control" ng-model="colors['diffuseColor'].hex" ng-change="materialController.updateColor('diffuseColor')" type="text">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Specular</label>
+                                    <div class="col-sm-6">
+                                        <input colorpicker class="form-control" ng-model="colors['specularColor'].hex" ng-change="materialController.updateColor('specularColor')" type="text">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Speclar Power</label>
+                                    <div class="col-sm-6">
+                                        <input type="number" class="form-control" placeholder="Speclar Power" ng-model="material.specularPower">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <form class="form-horizontal" role="form">
+                                <div class="form-group">
+                                    <label class="col-sm-6">Ambient</label>
+                                    <div class="col-sm-6">
+                                        <input colorpicker class="form-control" ng-model="colors['ambientColor'].hex" ng-change="materialController.updateColor('ambientColor')" type="text">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Emissive</label>
+                                    <div class="col-sm-6">
+                                        <input colorpicker class="form-control" ng-model="colors['emissiveColor'].hex" ng-change="materialController.updateColor('emissiveColor')" type="text">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Alpha</label>
+                                    <div class="col-sm-6">
+                                        <slider ng-model="material.alpha"
+                                                floor="0"
+                                                ceiling="1"
+                                                step="0.01"
+                                                precision="2">
+                                        </slider>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <h4>Frensel</h4>
+                    <tabset>
+                        <tab ng-repeat="frensel in frenselTypes" heading="{{frensel}}" active="tab.active" disabled="tab.disabled">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <form class="form-horizontal" role="form">
+                                        <div class="form-group">
+                                            <label class="col-sm-6">Left Color</label>
+                                            <div class="col-sm-6">
+                                                <input colorpicker class="form-control" ng-model="frensels[frensel]['left'].hex" ng-change="materialController.updateFrenselColor('left', frensel)" type="text">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-6">Bias</label>
+                                            <div class="col-sm-6">
+                                                <slider ng-model="material[frensel+'FresnelParameters'].bias"
+                                                        floor="-1"
+                                                        ceiling="1"
+                                                        step="0.01"
+                                                        precision="2">
+                                                </slider>
+                                            </div>
+                                        </div>
+                                        <label class="btn btn-primary" ng-model="material[frensel+'FresnelParameters'].isEnabled" btn-checkbox>Enabled</label>
+                                    </form>
+                                </div>
+                                <div class="col-md-6">
+                                    <form class="form-horizontal" role="form">
+                                        <div class="form-group">
+                                            <label class="col-sm-6">Right Color</label>
+                                            <div class="col-sm-6">
+                                                <input colorpicker class="form-control" ng-model="frensels[frensel]['right'].hex" ng-change="materialController.updateFrenselColor('right', frensel)" type="text">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-sm-6">Power</label>
+                                            <div class="col-sm-6">
+                                                <input type="number" class="form-control" placeholder="Power" ng-model="material[frensel+'FresnelParameters'].power">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </tab>
+                    </tabset>
+                </div>
+            </div>
+            <div class="col-md-4" ng-controller="CanvasController as canvasController">
+                <h1>Preview</h1>
+                <h4>Object Type</h4>
+                <select class="form-control" ng-model="canvasController.selectedObjectType" ng-options="type.name for type in canvasController.objectTypes" ng-change="canvasController.typeChanged()"></select>
+                <h4>Light Type</h4>
+                <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.typeChanged()"></select>
+                <h4>Babylon Canvas</h4>
+                <canvas id="renderCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="content"></div>
+
+
+
+</body>
+</html>
