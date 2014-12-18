@@ -41,3 +41,14 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+*.nupkg
+packages/*
+packages
+bin
+obj
+fonts
+i18n
+typings
+/TextureEditor/vendor/babylon.1.14.d.ts
+website
