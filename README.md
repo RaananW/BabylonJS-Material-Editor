@@ -1,7 +1,7 @@
-Babylon JS Material Editor
-==========================
+Babylon JS Material Editor v 0.1
+================================
 
-This is an angularjs based typescript project for real-time in browser material editing using BabylonJS (http://babylonjs.com)
+An AngularJS based typescript project for real-time in browser material editing using BabylonJS (http://babylonjs.com)
 This is the first release of the material editor, with a simple UI using twitter's bootstrap.
 
 Demo
