@@ -23,7 +23,13 @@
 
         public setBabylonColor(color: BABYLON.Color3) {
             this.babylonColor = color;
-            this.hex = "#" + (color.r * 255).toString(16) + (color.g * 255).toString(16) + (color.b * 255).toString(16)
+            var hex = "#";
+            ['r', 'g', 'b'].forEach((channel) => {
+                var c = color[channel] * 255;
+                hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
+            });
+            
+            this.hex = hex;
         }
 
         public updateColor() {
