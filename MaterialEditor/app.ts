@@ -20,7 +20,7 @@ module RW.TextureEditor {
                     .controller("CanvasController", CanvasController)
                     .controller("MaterialController", MaterialController)
                     .controller("TextureController", TextureController)
-                    .service("textureService", TextureService)
+                    .service("materialService", MaterialService)
                     .service("canvasService", CanvasService)
                     .directive("textureImage", textureImage)
                 ;

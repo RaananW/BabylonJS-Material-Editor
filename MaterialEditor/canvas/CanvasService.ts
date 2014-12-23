@@ -51,11 +51,6 @@
             this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
             //init material
             $rootScope.material = new BABYLON.StandardMaterial("material", this._scene);
-            //init fernsel in disabled mode.
-            ["diffuse", "emissive", "reflection", "opacity"].forEach((type) => {
-                $rootScope.material[type + 'FresnelParameters'] = new BABYLON.FresnelParameters();
-                $rootScope.material[type + 'FresnelParameters'].isEnabled = false;
-            });
 
             this.initScene(new SceneInitDefaults());
 

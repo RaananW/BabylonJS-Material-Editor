@@ -2,26 +2,69 @@
 
     export interface MaterialScope extends ng.IScope {
         material: BABYLON.StandardMaterial;
-        colors: { [id: string]: HexToBabylon };
-        frenselTypes: Array<String>;
-        frensels;
-        updateColor: (property: string) => void;
+        sectionNames: string[];
+        materialSections: { [section: string]: MaterialDefinitionSection };
+        updateTexture(type): void;
+    }
+
+    export class FrenselDefinition {
+        public leftColor: HexToBabylon;
+        public rightColor: HexToBabylon;
+
+        private _propertyInMaterial;
+
+        public frenselVariable: BABYLON.FresnelParameters;
+
+        constructor(name: string, _material: BABYLON.StandardMaterial) {
+            this._propertyInMaterial = name + 'FresnelParameters';
+            this.frenselVariable = new BABYLON.FresnelParameters();
+            this.frenselVariable.isEnabled = false;
+            _material[this._propertyInMaterial] = this.frenselVariable;
+            this.leftColor = new HexToBabylon("left", _material[this._propertyInMaterial]),
+            this.rightColor = new HexToBabylon("right", _material[this._propertyInMaterial])
+            
+        }
+    }
+
+    export class MaterialDefinitionSection {
+        public color: HexToBabylon;
+        public frensel: FrenselDefinition;
+        public texture: TextureDefinition;
+        constructor(public name: string, private _material : BABYLON.StandardMaterial, public hasColor, public hasTexture, public hasFrensel) {
+            if (hasColor) {
+                this.color = new HexToBabylon(name, _material);
+            }
+            if (hasTexture) {
+                this.texture = new TextureDefinition(name, _material);
+            }
+            if (hasFrensel) {
+                this.frensel = new FrenselDefinition(name, _material);
+            }
+        }
     }
 
     export class HexToBabylon {
         public babylonColor: BABYLON.Color3;
-        public hex: string;
-        constructor(public propertyName:string, private variable:any) {
-
-            this.setBabylonColor(variable[propertyName]);
+        private _hex: string;
+        constructor(public propertyName: string, private _variable: any) {
+            this.propertyName += "Color";
+            this._setBabylonColor(_variable[this.propertyName]);
         }
 
-        public setHex(hex: string) {
-            this.hex = hex;
-            this.babylonColor = this.convertStringToBabylonArray(hex);
+        //angular getter/setter
+        public hex(hex?: string) {
+            if (hex) {
+                this._hex = hex;
+                this.babylonColor = this.convertStringToBabylonArray(this._hex);
+                if (this.babylonColor) {
+                    this._variable[this.propertyName] = this.babylonColor;
+                }
+            } else {
+                return this._hex;
+            }
         }
 
-        public setBabylonColor(color: BABYLON.Color3) {
+        private _setBabylonColor(color: BABYLON.Color3) {
             this.babylonColor = color;
             var hex = "#";
             ['r', 'g', 'b'].forEach((channel) => {
@@ -29,14 +72,7 @@
                 hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
             });
             
-            this.hex = hex;
-        }
-
-        public updateColor() {
-            this.babylonColor = this.convertStringToBabylonArray(this.hex);
-            if (this.babylonColor) {
-                this.variable[this.propertyName] = this.babylonColor;
-            }
+            this._hex = hex;
         }
 
         private convertStringToBabylonArray(hex: string): BABYLON.Color3 {
@@ -60,39 +96,26 @@
 
         public static $inject = [
             '$scope',
-            'canvasService'
+            'canvasService',
+            'materialService'
         ];
         
         constructor(
             private $scope: MaterialScope,
-            private canvasService: CanvasService
+            private canvasService: CanvasService,
+            private materialService:MaterialService
             ) {
             //todo will this work??
             $scope.material = this.canvasService.getMaterial();
-            $scope.colors = {};
 
-            ["diffuseColor", "specularColor", "emissiveColor", "ambientColor"].forEach((property) => {
-                $scope.colors[property] = new HexToBabylon(property, $scope.material);
-            });
+            $scope.sectionNames = this.materialService.getMaterialSectionsArray();
+            $scope.materialSections = this.materialService.getMaterialSections();
 
-            $scope.frenselTypes = [];
-            $scope.frensels = {};
-
-            ["diffuse", "emissive", "reflection", "opacity"].forEach((type) => {
-                $scope.frenselTypes.push(type);
-                $scope.frensels[type] = {
-                    left: new HexToBabylon("leftColor", $scope.material[type + 'FresnelParameters']),
-                    right: new HexToBabylon("rightColor", $scope.material[type + 'FresnelParameters'])
-                };
-            });
-        }
-
-        public updateColor(property: string) {
-            this.$scope.colors[property].updateColor();
-        }
-
-        public updateFrenselColor(property: string, scopeProperty:string) {
-            this.$scope.frensels[scopeProperty][property].updateColor();
+            $scope.updateTexture = (type) => {
+                $scope.$apply(() => {
+                    $scope.materialSections[type].texture.canvasUpdated();
+                });
+            }
         }
     }
 }

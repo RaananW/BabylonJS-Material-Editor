@@ -12,37 +12,34 @@
         
         constructor(private $rootScope: TextureEditorRootScope, private canvasService:CanvasService) {
             this._material = $rootScope.material;
-            this._material.backFaceCulling = true;
-            $rootScope.texturedObject.material = this._material;
-            this._setTextures = {};
         }
 
-        public changeTexture(textureDef: TextureDefinitionImpl) {
+        public changeTexture(textureDef: TextureDefinition) {
             //TODO cube processing
 
-            var texture: BABYLON.Texture;
-            if (this._setTextures[textureDef.type]) {
-                texture = this._setTextures[textureDef.type];
-            } else {
-                var canvasElement = document.getElementById(textureDef.canvasId + "-0");
-                texture = new BABYLON.DynamicTexture(textureDef.title, canvasElement, this.$rootScope.scene, false);
-            }
+            //var texture: BABYLON.Texture;
+            //if (this._setTextures[textureDef.type]) {
+            //    texture = this._setTextures[textureDef.type];
+            //} else {
+            //    var canvasElement = document.getElementById(textureDef.canvasId + "-0");
+            //    texture = new BABYLON.DynamicTexture(textureDef.title, canvasElement, this.$rootScope.scene, false);
+            //}
 
-            this._setTextures[textureDef.type] = texture;
+            //this._setTextures[textureDef.type] = texture;
 
-            if (!textureDef.isEnabled) {
-                //not disposing, the texture will simply be reenabled
-                this._material[textureDef.propertyInMaterial] = null;
-                return;
-            } 
+            //if (!textureDef.isEnabled) {
+            //    //not disposing, the texture will simply be reenabled
+            //    this._material[textureDef.propertyInMaterial] = null;
+            //    return;
+            //} 
 
-            for (var property in textureDef) {
-                if (textureDef.hasOwnProperty(property) && texture.hasOwnProperty(property)) {
-                    texture[property] = textureDef[property];
-                }
-            }
+            //for (var property in textureDef) {
+            //    if (textureDef.hasOwnProperty(property) && texture.hasOwnProperty(property)) {
+            //        texture[property] = textureDef[property];
+            //    }
+            //}
 
-            this.canvasService.updateTexture(textureDef.propertyInMaterial, texture);
+            //this.canvasService.updateTexture(textureDef.propertyInMaterial, texture);
         }
     }
 } 

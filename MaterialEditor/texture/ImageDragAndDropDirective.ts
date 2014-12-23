@@ -14,17 +14,17 @@
             },
             transclude:true,
             link: function (scope, element, attr) {
-                var texture = <TextureDefinitionImpl> scope.tex;
+                var texture = <TextureDefinition> scope.tex;
 
-                function render(src, canvasId: string) {
+                function render(src, canvasId: string, onSuccess) {
                     var image = new Image();
                     image.onload = function () {
                         var canvas = <HTMLCanvasElement> document.getElementById(canvasId);
                         var ctx = canvas.getContext("2d");
                         //todo use canvas.style.height and width to keep aspect ratio
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        var width = BABYLON.Tools.GetExponantOfTwo(image.width, 2048);
-                        var height = BABYLON.Tools.GetExponantOfTwo(image.height, 2048);
+                        var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
+                        var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
                         var max = Math.max(width, height);
                         if (width > height) {
                             image.width *= height / image.height;
@@ -37,6 +37,9 @@
                         canvas.width = max;
                         canvas.height = max;
                         ctx.drawImage(image, 0, 0, max, max);
+                        if (onSuccess) {
+                            onSuccess();
+                        }
                     };
                     image.src = src;
                 }
@@ -51,10 +54,11 @@
                     //	Create our FileReader and run the results through the render function.
                     var reader = new FileReader();
                     reader.onload = (e) => {
-                        render(e.target.result, canvasId);
-                        if (scope.updateTexture) {
-                            scope.updateTexture({ $type: texture.type });
-                        }
+                        render(e.target.result, canvasId, function () {
+                            if (scope.updateTexture) {
+                                scope.updateTexture({ $name: texture.name });
+                            }
+                        });
                     };
                     reader.readAsDataURL(src);
                 }
@@ -63,11 +67,9 @@
 
                     element.on("dragover", ".texture-canvas-drop", function (e) {
                         e.preventDefault();
-                        //this.style.backgroundColor = "red";
                     });
                     element.on("dragleave", ".texture-canvas-drop", function (e) {
                         e.preventDefault();
-                        //this.style.backgroundColor = "white";
                     });
                     element.on("drop", ".texture-canvas-drop", function (e:any) {
                         e.preventDefault();
