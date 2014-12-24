@@ -30,7 +30,7 @@
                 this.lightTypes = [
                     { name: 'Hemispheric' , type: LightType.HEMISPHERIC },
                     //{ name: 'Spot', type: LightType.SPOT },
-                    { name: 'Point', type: LightType.POINT }
+                    { name: 'Point (in camera position)', type: LightType.POINT }
                 ]
                 this.selectedLightType = this.lightTypes[0];
 

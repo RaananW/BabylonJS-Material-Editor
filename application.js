@@ -49,7 +49,7 @@ var RW;
                 this.lightTypes = [
                     { name: 'Hemispheric', type: 0 /* HEMISPHERIC */ },
                     //{ name: 'Spot', type: LightType.SPOT },
-                    { name: 'Point', type: 2 /* POINT */ }
+                    { name: 'Point (in camera position)', type: 2 /* POINT */ }
                 ];
                 this.selectedLightType = this.lightTypes[0];
 
