@@ -52,3 +52,5 @@ i18n
 typings
 /TextureEditor/vendor/babylon.1.14.d.ts
 website
+Scripts
+/*.config
