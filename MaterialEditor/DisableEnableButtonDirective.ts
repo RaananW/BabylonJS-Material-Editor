@@ -3,7 +3,8 @@
     export var disableEnableButton = [function () {
         return {
             require: 'ngModel',
-            link: function (scope, element, attrs, ngModel) {
+            priority: 1,
+            link: function (scope, element, attrs, ngModel:ng.INgModelController) {
                 if (ngModel.$modelValue) {
                     element.html("Enabled");
                     element.addClass('btn-success');
@@ -33,9 +34,9 @@
                         element.removeClass('btn-success');
                     }
                 });
-                //hack due to angulars changing the model later than the click. TODO - find a better way of doing that...
-                element.bind('click', function () {
-                    if (!ngModel.$modelValue) {
+
+                ngModel.$render = () => {
+                    if (ngModel.$modelValue) {
                         element.html("Enabled");
                         element.addClass('btn-success');
                         element.removeClass('btn-danger');
@@ -44,7 +45,7 @@
                         element.addClass('btn-danger');
                         element.removeClass('btn-success');
                     }
-                });
+                }
             }
         }
     }]
