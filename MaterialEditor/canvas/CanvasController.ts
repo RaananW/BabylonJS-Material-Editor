@@ -41,6 +41,17 @@
                         });
                     });
                 });
+
+                $scope.$on("lightChanged", (event, light: BABYLON.Light) => {
+                    $scope['light'] = light;
+                    $scope['lightSpecularColor'] = new HexToBabylon('specular', light, "");
+                    $scope['lightDiffuseColor'] = new HexToBabylon('diffuse', light, "");
+                });
+
+                $scope['lightConfigure'] = true;
+
+                this.canvasService.initLight();
+                
             }
 
             public typeChanged() {

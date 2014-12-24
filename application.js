@@ -1,6 +1,100 @@
 ﻿var RW;
 (function (RW) {
     (function (TextureEditor) {
+        'use strict';
+
+        var AngularStarter = (function () {
+            function AngularStarter(name) {
+                this.name = name;
+            }
+            AngularStarter.prototype.start = function () {
+                var _this = this;
+                $(document).ready(function () {
+                    _this.app = angular.module(name, [
+                        'ui.bootstrap',
+                        'colorpicker.module',
+                        'ui.slider'
+                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage);
+
+                    angular.bootstrap(document, [_this.app.name]);
+                });
+            };
+            return AngularStarter;
+        })();
+        TextureEditor.AngularStarter = AngularStarter;
+
+        new AngularStarter('materialEditor').start();
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var CanvasController = (function () {
+            function CanvasController($scope, $timeout, canvasService) {
+                var _this = this;
+                this.$scope = $scope;
+                this.$timeout = $timeout;
+                this.canvasService = canvasService;
+                this.objectTypes = [];
+                this.lightTypes = [];
+                var meshes = canvasService.getObjects();
+                for (var pos = 0; pos < meshes.length; pos++) {
+                    this.objectTypes.push({ name: meshes[pos].name, value: pos });
+                }
+                ;
+
+                this.selectedObjectPosition = this.objectTypes[0];
+
+                this.lightTypes = [
+                    { name: 'Hemispheric', type: 0 /* HEMISPHERIC */ },
+                    //{ name: 'Spot', type: LightType.SPOT },
+                    { name: 'Point (in camera position)', type: 2 /* POINT */ }
+                ];
+                this.selectedLightType = this.lightTypes[0];
+
+                $scope.$on("objectChanged", function (event, object) {
+                    $timeout(function () {
+                        $scope.$apply(function () {
+                            _this.selectedObjectPosition = _this.objectTypes.filter(function (map) {
+                                return map.name === object.name;
+                            })[0];
+                        });
+                    });
+                });
+
+                $scope.$on("lightChanged", function (event, light) {
+                    $scope['light'] = light;
+                    $scope['lightSpecularColor'] = new TextureEditor.HexToBabylon('specular', light, "");
+                    $scope['lightDiffuseColor'] = new TextureEditor.HexToBabylon('diffuse', light, "");
+                });
+
+                $scope['lightConfigure'] = true;
+
+                this.canvasService.initLight();
+            }
+            CanvasController.prototype.typeChanged = function () {
+                this.canvasService.initLight(this.selectedLightType.type);
+                //this.canvasService.initScene(new SceneInitImpl(this.selectedObjectType.type, this.selectedLightType.type, true));
+            };
+
+            CanvasController.prototype.objectSelected = function () {
+                this.canvasService.selectObjectInPosition(this.selectedObjectPosition.value);
+            };
+            CanvasController.$inject = [
+                '$scope',
+                '$timeout',
+                'canvasService'
+            ];
+            return CanvasController;
+        })();
+        TextureEditor.CanvasController = CanvasController;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
         (function (ObjectType) {
             ObjectType[ObjectType["SPHERE"] = 0] = "SPHERE";
             ObjectType[ObjectType["BOX"] = 1] = "BOX";
@@ -17,6 +111,217 @@
             LightType[LightType["POINT"] = 2] = "POINT";
         })(TextureEditor.LightType || (TextureEditor.LightType = {}));
         var LightType = TextureEditor.LightType;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var CanvasService = (function () {
+            function CanvasService($rootScope) {
+                var _this = this;
+                this.$rootScope = $rootScope;
+                this._canvasElement = document.getElementById("renderCanvas");
+                this._engine = new BABYLON.Engine(this._canvasElement);
+                this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
+
+                //init material
+                //$rootScope.material = new BABYLON.StandardMaterial("material", this._scene);
+                this._camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 10, 0.8, 30, new BABYLON.Vector3(0, 0, 0), this._scene);
+                this._camera.wheelPrecision = 20;
+
+                this._camera.attachControl(this._canvasElement, true);
+
+                //this.initScene(new SceneInitDefaults());
+                this.createDefaultScene();
+
+                //this.initLight();
+                this._engine.runRenderLoop(function () {
+                    _this._scene.render();
+                });
+
+                window.addEventListener("resize", function () {
+                    _this._engine.resize();
+                });
+
+                this._scene.registerBeforeRender(function () {
+                });
+            }
+            CanvasService.prototype.getScene = function () {
+                return this.$rootScope.scene;
+            };
+
+            CanvasService.prototype.getLight = function () {
+                return this._light;
+            };
+
+            CanvasService.prototype.getMaterial = function () {
+                return this.$rootScope.material;
+            };
+
+            CanvasService.prototype.updateTexture = function (property, texture) {
+                this._textureObject.material[property] = texture;
+            };
+
+            CanvasService.prototype.createDefaultScene = function () {
+                var _this = this;
+                //taken shamelessly from babylon's playground!
+                var scene = this._scene;
+
+                var box = BABYLON.Mesh.CreateBox("Box", 6.0, scene);
+                var sphere = BABYLON.Mesh.CreateSphere("Sphere", 10.0, 10.0, scene);
+                var plan = BABYLON.Mesh.CreatePlane("Plane", 10.0, scene);
+                var cylinder = BABYLON.Mesh.CreateCylinder("Cylinder", 3, 3, 3, 6, 1, scene, false);
+                var torus = BABYLON.Mesh.CreateTorus("Torus", 5, 1, 10, scene, false);
+                var knot = BABYLON.Mesh.CreateTorusKnot("Knot", 2, 0.5, 128, 64, 2, 3, scene);
+
+                box.position = new BABYLON.Vector3(-10, 0, 0);
+                sphere.position = new BABYLON.Vector3(0, 10, 0);
+                plan.position.z = 10;
+                cylinder.position.z = -10;
+                torus.position.x = 10;
+                knot.position.y = -10;
+
+                //add actions to each object (hover, select)
+                scene.meshes.forEach(function (mesh) {
+                    mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", _this._scene);
+                    mesh.actionManager = new BABYLON.ActionManager(_this._scene);
+                    mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
+                    mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
+                    mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnLeftPickTrigger, function () {
+                        _this.selectObject(mesh);
+                    }));
+                });
+                this.selectObject(box);
+            };
+
+            CanvasService.prototype.initLight = function (lightType) {
+                if (typeof lightType === "undefined") { lightType = 0 /* HEMISPHERIC */; }
+                this._scene.lights.forEach(function (light) {
+                    light.dispose();
+                });
+
+                switch (lightType) {
+                    case 0 /* HEMISPHERIC */:
+                        this._light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), this._scene);
+                        this._light.groundColor = new BABYLON.Color3(0, 0, 0);
+                        break;
+                    case 2 /* POINT */:
+                        this._light = new BABYLON.PointLight("light", this._camera.position, this._scene);
+                        break;
+                    case 1 /* SPOT */:
+                        //todo calculate direction!
+                        this._light = new BABYLON.SpotLight("light", this._camera.position, new BABYLON.Vector3(0, -1, 0), 0.8, 2, this._scene);
+                        break;
+                }
+
+                this._light.diffuse = new BABYLON.Color3(0.6, 0.6, 0.6);
+                this._light.specular = new BABYLON.Color3(1, 1, 1);
+
+                this.$rootScope.$broadcast("lightChanged", this._light);
+            };
+
+            CanvasService.prototype.selectObjectInPosition = function (position) {
+                this.selectObject(this._scene.meshes[position]);
+            };
+
+            CanvasService.prototype.selectObject = function (mesh) {
+                this.$rootScope.texturedObject = this._textureObject = mesh;
+                this.$rootScope.material = this._textureObject.material;
+                this.$rootScope.$broadcast("objectChanged", this._textureObject);
+                this.directCameraTo(this._textureObject);
+            };
+
+            CanvasService.prototype.directCameraTo = function (object) {
+                this._camera.target = object.position;
+            };
+
+            CanvasService.prototype.getObjects = function () {
+                return this._scene.meshes;
+            };
+            CanvasService.$inject = [
+                '$rootScope'
+            ];
+            return CanvasService;
+        })();
+        TextureEditor.CanvasService = CanvasService;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var MaterialController = (function () {
+            function MaterialController($scope, canvasService, materialService) {
+                var _this = this;
+                this.$scope = $scope;
+                this.canvasService = canvasService;
+                this.materialService = materialService;
+                //todo will this work??
+                $scope.material = this.canvasService.getMaterial();
+
+                $scope.sectionNames = this.materialService.getMaterialSectionsArray();
+                $scope.materialSections = this.materialService.getMaterialSections();
+
+                $scope.updateTexture = function (type) {
+                    $scope.$apply(function () {
+                        $scope.materialSections[type].texture.canvasUpdated();
+                    });
+                };
+
+                $scope.$on("objectChanged", function () {
+                    console.log("changed");
+                    _this.materialService.initMaterialSections();
+                    $scope.material = _this.canvasService.getMaterial();
+                    $scope.sectionNames = _this.materialService.getMaterialSectionsArray();
+                    $scope.materialSections = _this.materialService.getMaterialSections();
+                });
+            }
+            MaterialController.$inject = [
+                '$scope',
+                'canvasService',
+                'materialService'
+            ];
+            return MaterialController;
+        })();
+        TextureEditor.MaterialController = MaterialController;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var MaterialService = (function () {
+            function MaterialService($rootScope, canvasService) {
+                this.$rootScope = $rootScope;
+                this.canvasService = canvasService;
+                this.initMaterialSections();
+            }
+            MaterialService.prototype.initMaterialSections = function () {
+                this.materialSections = {};
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
+            };
+
+            MaterialService.prototype.getMaterialSectionsArray = function () {
+                return Object.keys(this.materialSections);
+            };
+
+            MaterialService.prototype.getMaterialSections = function () {
+                return this.materialSections;
+            };
+            MaterialService.$inject = [
+                '$rootScope',
+                'canvasService'
+            ];
+            return MaterialService;
+        })();
+        TextureEditor.MaterialService = MaterialService;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -45,10 +350,11 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var HexToBabylon = (function () {
-            function HexToBabylon(propertyName, _variable) {
+            function HexToBabylon(propertyName, _variable, addedString) {
+                if (typeof addedString === "undefined") { addedString = "Color"; }
                 this.propertyName = propertyName;
                 this._variable = _variable;
-                this.propertyName += "Color";
+                this.propertyName += addedString;
                 this._setBabylonColor(_variable[this.propertyName]);
             }
             //angular getter/setter
@@ -124,37 +430,107 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        var MaterialService = (function () {
-            function MaterialService($rootScope, canvasService) {
-                this.$rootScope = $rootScope;
+        TextureEditor.textureImage = [
+            "$parse", function ($parse) {
+                return {
+                    restrict: 'E',
+                    templateUrl: function (elem, attr) {
+                        //return 'image-dnd-' + attr.amount + '.html';
+                        //console.log(elem, attr);
+                        return 'template/image-drag-drop.html';
+                    },
+                    scope: {
+                        tex: '=',
+                        updateTexture: '&onUpdateTexture'
+                    },
+                    transclude: true,
+                    link: function (scope, element, attr) {
+                        var texture = scope.tex;
+
+                        function render(src, canvasId, onSuccess) {
+                            var image = new Image();
+                            image.onload = function () {
+                                var canvas = document.getElementById(canvasId);
+                                var ctx = canvas.getContext("2d");
+
+                                //todo use canvas.style.height and width to keep aspect ratio
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
+                                var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
+                                var max = Math.max(width, height);
+                                if (width > height) {
+                                    image.width *= height / image.height;
+                                    image.height = height;
+                                } else {
+                                    image.height *= width / image.width;
+                                    image.width = width;
+                                }
+
+                                canvas.width = max;
+                                canvas.height = max;
+                                ctx.drawImage(image, 0, 0, max, max);
+                                if (onSuccess) {
+                                    onSuccess();
+                                }
+                            };
+                            image.src = src;
+                        }
+
+                        function loadImage(src, canvasId) {
+                            //	Prevent any non-image file type from being read.
+                            if (!src.type.match(/image.*/)) {
+                                console.log("The dropped file is not an image: ", src.type);
+                                return;
+                            }
+
+                            //	Create our FileReader and run the results through the render function.
+                            var reader = new FileReader();
+                            reader.onload = function (e) {
+                                render(e.target.result, canvasId, function () {
+                                    if (scope.updateTexture) {
+                                        scope.updateTexture({ $name: texture.name });
+                                    }
+                                });
+                            };
+                            reader.readAsDataURL(src);
+                        }
+                        for (var i = 0; i < texture.numberOfImages; i++) {
+                            var canvasId = (texture.canvasId + "-" + i);
+
+                            element.on("dragover", ".texture-canvas-drop", function (e) {
+                                e.preventDefault();
+                            });
+                            element.on("dragleave", ".texture-canvas-drop", function (e) {
+                                e.preventDefault();
+                            });
+                            element.on("drop", ".texture-canvas-drop", function (e) {
+                                e.preventDefault();
+                                loadImage(e.originalEvent.dataTransfer.files[0], canvasId);
+                            });
+                        }
+                    }
+                };
+            }];
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var TextureController = (function () {
+            function TextureController($scope, canvasService, materialService) {
+                this.$scope = $scope;
                 this.canvasService = canvasService;
-                this.initMaterialSections();
+                this.materialService = materialService;
             }
-            MaterialService.prototype.initMaterialSections = function () {
-                this.materialSections = {};
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
-            };
-
-            MaterialService.prototype.getMaterialSectionsArray = function () {
-                return Object.keys(this.materialSections);
-            };
-
-            MaterialService.prototype.getMaterialSections = function () {
-                return this.materialSections;
-            };
-            MaterialService.$inject = [
-                '$rootScope',
-                'canvasService'
+            TextureController.$inject = [
+                '$scope',
+                'canvasService',
+                'materialService'
             ];
-            return MaterialService;
+            return TextureController;
         })();
-        TextureEditor.MaterialService = MaterialService;
+        TextureEditor.TextureController = TextureController;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -283,362 +659,6 @@ var RW;
             CoordinatesMode[CoordinatesMode["PROJECTION"] = 4] = "PROJECTION";
         })(TextureEditor.CoordinatesMode || (TextureEditor.CoordinatesMode = {}));
         var CoordinatesMode = TextureEditor.CoordinatesMode;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var CanvasController = (function () {
-            function CanvasController($scope, $timeout, canvasService) {
-                var _this = this;
-                this.$scope = $scope;
-                this.$timeout = $timeout;
-                this.canvasService = canvasService;
-                this.objectTypes = [];
-                this.lightTypes = [];
-                var meshes = canvasService.getObjects();
-                for (var pos = 0; pos < meshes.length; pos++) {
-                    this.objectTypes.push({ name: meshes[pos].name, value: pos });
-                }
-                ;
-
-                this.selectedObjectPosition = this.objectTypes[0];
-
-                this.lightTypes = [
-                    { name: 'Hemispheric', type: 0 /* HEMISPHERIC */ },
-                    //{ name: 'Spot', type: LightType.SPOT },
-                    { name: 'Point (in camera position)', type: 2 /* POINT */ }
-                ];
-                this.selectedLightType = this.lightTypes[0];
-
-                $scope.$on("objectChanged", function (event, object) {
-                    $timeout(function () {
-                        $scope.$apply(function () {
-                            _this.selectedObjectPosition = _this.objectTypes.filter(function (map) {
-                                return map.name === object.name;
-                            })[0];
-                        });
-                    });
-                });
-            }
-            CanvasController.prototype.typeChanged = function () {
-                this.canvasService.initLight(this.selectedLightType.type);
-                //this.canvasService.initScene(new SceneInitImpl(this.selectedObjectType.type, this.selectedLightType.type, true));
-            };
-
-            CanvasController.prototype.objectSelected = function () {
-                this.canvasService.selectObjectInPosition(this.selectedObjectPosition.value);
-            };
-            CanvasController.$inject = [
-                '$scope',
-                '$timeout',
-                'canvasService'
-            ];
-            return CanvasController;
-        })();
-        TextureEditor.CanvasController = CanvasController;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var CanvasService = (function () {
-            function CanvasService($rootScope) {
-                var _this = this;
-                this.$rootScope = $rootScope;
-                this._canvasElement = document.getElementById("renderCanvas");
-                this._engine = new BABYLON.Engine(this._canvasElement);
-                this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
-
-                //init material
-                //$rootScope.material = new BABYLON.StandardMaterial("material", this._scene);
-                this._camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 10, 0.8, 30, new BABYLON.Vector3(0, 0, 0), this._scene);
-                this._camera.wheelPrecision = 20;
-
-                this._camera.attachControl(this._canvasElement, true);
-
-                //this.initScene(new SceneInitDefaults());
-                this.createDefaultScene();
-                this.initLight();
-
-                this._engine.runRenderLoop(function () {
-                    _this._scene.render();
-                });
-
-                window.addEventListener("resize", function () {
-                    _this._engine.resize();
-                });
-
-                this._scene.registerBeforeRender(function () {
-                });
-            }
-            CanvasService.prototype.getScene = function () {
-                return this.$rootScope.scene;
-            };
-
-            CanvasService.prototype.getMaterial = function () {
-                return this.$rootScope.material;
-            };
-
-            CanvasService.prototype.updateTexture = function (property, texture) {
-                this._textureObject.material[property] = texture;
-            };
-
-            CanvasService.prototype.createDefaultScene = function () {
-                var _this = this;
-                //taken shamelessly from babylon's playground!
-                var scene = this._scene;
-
-                var box = BABYLON.Mesh.CreateBox("Box", 6.0, scene);
-                var sphere = BABYLON.Mesh.CreateSphere("Sphere", 10.0, 10.0, scene);
-                var plan = BABYLON.Mesh.CreatePlane("Plane", 10.0, scene);
-                var cylinder = BABYLON.Mesh.CreateCylinder("Cylinder", 3, 3, 3, 6, 1, scene, false);
-                var torus = BABYLON.Mesh.CreateTorus("Torus", 5, 1, 10, scene, false);
-                var knot = BABYLON.Mesh.CreateTorusKnot("Knot", 2, 0.5, 128, 64, 2, 3, scene);
-
-                box.position = new BABYLON.Vector3(-10, 0, 0);
-                sphere.position = new BABYLON.Vector3(0, 10, 0);
-                plan.position.z = 10;
-                cylinder.position.z = -10;
-                torus.position.x = 10;
-                knot.position.y = -10;
-
-                //add actions to each object (hover, select)
-                scene.meshes.forEach(function (mesh) {
-                    mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", _this._scene);
-                    mesh.actionManager = new BABYLON.ActionManager(_this._scene);
-                    mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
-                    mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
-                    mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnLeftPickTrigger, function () {
-                        _this.selectObject(mesh);
-                    }));
-                });
-                this.selectObject(box);
-            };
-
-            CanvasService.prototype.initLight = function (lightType) {
-                if (typeof lightType === "undefined") { lightType = 0 /* HEMISPHERIC */; }
-                this._scene.lights.forEach(function (light) {
-                    light.dispose();
-                });
-
-                switch (lightType) {
-                    case 0 /* HEMISPHERIC */:
-                        this._light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), this._scene);
-                        this._light.groundColor = new BABYLON.Color3(0, 0, 0);
-                        break;
-                    case 2 /* POINT */:
-                        this._light = new BABYLON.PointLight("light", this._camera.position, this._scene);
-                        break;
-                    case 1 /* SPOT */:
-                        //todo calculate direction!
-                        this._light = new BABYLON.SpotLight("light", this._camera.position, new BABYLON.Vector3(0, -1, 0), 0.8, 2, this._scene);
-                        break;
-                }
-            };
-
-            CanvasService.prototype.selectObjectInPosition = function (position) {
-                this.selectObject(this._scene.meshes[position]);
-            };
-
-            CanvasService.prototype.selectObject = function (mesh) {
-                this.$rootScope.texturedObject = this._textureObject = mesh;
-                this.$rootScope.material = this._textureObject.material;
-                this.$rootScope.$broadcast("objectChanged", this._textureObject);
-                this.directCameraTo(this._textureObject);
-            };
-
-            CanvasService.prototype.directCameraTo = function (object) {
-                this._camera.target = object.position;
-            };
-
-            CanvasService.prototype.getObjects = function () {
-                return this._scene.meshes;
-            };
-            CanvasService.$inject = [
-                '$rootScope'
-            ];
-            return CanvasService;
-        })();
-        TextureEditor.CanvasService = CanvasService;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var MaterialController = (function () {
-            function MaterialController($scope, canvasService, materialService) {
-                var _this = this;
-                this.$scope = $scope;
-                this.canvasService = canvasService;
-                this.materialService = materialService;
-                //todo will this work??
-                $scope.material = this.canvasService.getMaterial();
-
-                $scope.sectionNames = this.materialService.getMaterialSectionsArray();
-                $scope.materialSections = this.materialService.getMaterialSections();
-
-                $scope.updateTexture = function (type) {
-                    $scope.$apply(function () {
-                        $scope.materialSections[type].texture.canvasUpdated();
-                    });
-                };
-
-                $scope.$on("objectChanged", function () {
-                    console.log("changed");
-                    _this.materialService.initMaterialSections();
-                    $scope.material = _this.canvasService.getMaterial();
-                    $scope.sectionNames = _this.materialService.getMaterialSectionsArray();
-                    $scope.materialSections = _this.materialService.getMaterialSections();
-                });
-            }
-            MaterialController.$inject = [
-                '$scope',
-                'canvasService',
-                'materialService'
-            ];
-            return MaterialController;
-        })();
-        TextureEditor.MaterialController = MaterialController;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        TextureEditor.textureImage = [
-            "$parse", function ($parse) {
-                return {
-                    restrict: 'E',
-                    templateUrl: function (elem, attr) {
-                        //return 'image-dnd-' + attr.amount + '.html';
-                        //console.log(elem, attr);
-                        return 'template/image-drag-drop.html';
-                    },
-                    scope: {
-                        tex: '=',
-                        updateTexture: '&onUpdateTexture'
-                    },
-                    transclude: true,
-                    link: function (scope, element, attr) {
-                        var texture = scope.tex;
-
-                        function render(src, canvasId, onSuccess) {
-                            var image = new Image();
-                            image.onload = function () {
-                                var canvas = document.getElementById(canvasId);
-                                var ctx = canvas.getContext("2d");
-
-                                //todo use canvas.style.height and width to keep aspect ratio
-                                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
-                                var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
-                                var max = Math.max(width, height);
-                                if (width > height) {
-                                    image.width *= height / image.height;
-                                    image.height = height;
-                                } else {
-                                    image.height *= width / image.width;
-                                    image.width = width;
-                                }
-
-                                canvas.width = max;
-                                canvas.height = max;
-                                ctx.drawImage(image, 0, 0, max, max);
-                                if (onSuccess) {
-                                    onSuccess();
-                                }
-                            };
-                            image.src = src;
-                        }
-
-                        function loadImage(src, canvasId) {
-                            //	Prevent any non-image file type from being read.
-                            if (!src.type.match(/image.*/)) {
-                                console.log("The dropped file is not an image: ", src.type);
-                                return;
-                            }
-
-                            //	Create our FileReader and run the results through the render function.
-                            var reader = new FileReader();
-                            reader.onload = function (e) {
-                                render(e.target.result, canvasId, function () {
-                                    if (scope.updateTexture) {
-                                        scope.updateTexture({ $name: texture.name });
-                                    }
-                                });
-                            };
-                            reader.readAsDataURL(src);
-                        }
-                        for (var i = 0; i < texture.numberOfImages; i++) {
-                            var canvasId = (texture.canvasId + "-" + i);
-
-                            element.on("dragover", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                            });
-                            element.on("dragleave", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                            });
-                            element.on("drop", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                                loadImage(e.originalEvent.dataTransfer.files[0], canvasId);
-                            });
-                        }
-                    }
-                };
-            }];
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var TextureController = (function () {
-            function TextureController($scope, canvasService, materialService) {
-                this.$scope = $scope;
-                this.canvasService = canvasService;
-                this.materialService = materialService;
-            }
-            TextureController.$inject = [
-                '$scope',
-                'canvasService',
-                'materialService'
-            ];
-            return TextureController;
-        })();
-        TextureEditor.TextureController = TextureController;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        'use strict';
-
-        var AngularStarter = (function () {
-            function AngularStarter(name) {
-                this.name = name;
-            }
-            AngularStarter.prototype.start = function () {
-                var _this = this;
-                $(document).ready(function () {
-                    _this.app = angular.module(name, [
-                        'ui.bootstrap',
-                        'colorpicker.module',
-                        'ui.slider'
-                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage);
-
-                    angular.bootstrap(document, [_this.app.name]);
-                });
-            };
-            return AngularStarter;
-        })();
-        TextureEditor.AngularStarter = AngularStarter;
-
-        new AngularStarter('materialEditor').start();
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));

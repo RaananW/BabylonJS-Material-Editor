@@ -3,8 +3,8 @@
     export class HexToBabylon {
         public babylonColor: BABYLON.Color3;
         private _hex: string;
-        constructor(public propertyName: string, private _variable: any) {
-            this.propertyName += "Color";
+        constructor(public propertyName: string, private _variable: any, addedString:string = "Color") {
+            this.propertyName += addedString;
             this._setBabylonColor(_variable[this.propertyName]);
         }
 

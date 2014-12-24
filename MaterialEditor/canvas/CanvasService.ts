@@ -26,7 +26,7 @@
 
             //this.initScene(new SceneInitDefaults());
             this.createDefaultScene();
-            this.initLight();
+            //this.initLight();
 
             this._engine.runRenderLoop(() => {
                 this._scene.render();
@@ -44,6 +44,10 @@
 
         public getScene(): BABYLON.Scene {
             return this.$rootScope.scene;
+        }
+
+        public getLight(): BABYLON.Light {
+            return this._light;
         }
 
         public getMaterial(): BABYLON.StandardMaterial {
@@ -103,6 +107,11 @@
                     this._light = new BABYLON.SpotLight("light", this._camera.position, new BABYLON.Vector3(0, -1, 0), 0.8, 2, this._scene);
                     break;
             }
+
+            this._light.diffuse = new BABYLON.Color3(0.6, 0.6, 0.6);
+            this._light.specular = new BABYLON.Color3(1, 1, 1);
+
+            this.$rootScope.$broadcast("lightChanged", this._light);
         }
 
         public selectObjectInPosition(position: number) {

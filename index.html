@@ -243,10 +243,12 @@
                 </div>
             </div>
             <div class="col-md-4" ng-controller="CanvasController as canvasController">
-                <h4>Mesh</h4>
-                <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
-                <h4>Light Type</h4>
-                <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.typeChanged()"></select>
+                <div class="col-md-6">
+                    <h4>Mesh</h4>
+                </div>
+                <div class="col-md-6 alphaDiv">
+                    <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
+                </div>                
                 <div class="row alphaDiv">
                     <div class="col-md-6">
                         <h4>Alpha</h4>
@@ -260,7 +262,34 @@
                         </slider>
                     </div>
                 </div>
-                <canvas id="renderCanvas"></canvas>
+                <button class="btn btn-default alphaDiv" ng-click="lightConfigure = !lightConfigure">Configure Light</button>
+                <div collapse="lightConfigure">
+                    <h4>Light Type</h4>
+                    <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.typeChanged()"></select>
+                    <div class="row alphaDiv">
+                        <div class="col-md-6">
+                            <h4>Diffuse Color</h4>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input colorpicker class="form-control" ng-model="lightDiffuseColor.hex" ng-model-options="{ getterSetter: true }" type="text">
+                                <div class="input-group-addon" ng-style="{'background-color': lightDiffuseColor.hex()}"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Specular Color</h4>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input colorpicker class="form-control" ng-model="lightSpecularColor.hex" ng-model-options="{ getterSetter: true }" type="text">
+                                <div class="input-group-addon" ng-style="{'background-color': lightSpecularColor.hex()}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <canvas class="alphaDiv" id="renderCanvas"></canvas>
             </div>
         </div>
     </div>
