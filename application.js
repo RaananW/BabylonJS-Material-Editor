@@ -508,15 +508,9 @@ var RW;
             }
             TextureDefinition.prototype.initTexture = function () {
                 var canvasElement = document.getElementById(this.canvasId + "-0");
-
-                //console.log(canvasElement);
-                //console.log(canvasElement.toDataURL().length);
                 var base64 = canvasElement.toDataURL();
                 this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64);
-
-                //new BABYLON.DynamicTexture(this.propertyInMaterial, canvasElement, this._material.getScene(), true);
-                //new BABYLON.Texture("/Content/AB1_kl.jpg", this._material.getScene(), false);
-                if (name != "reflection") {
+                if (this.name != "reflection") {
                     this.coordinatesMode(0 /* EXPLICIT */);
                 } else {
                     this.coordinatesMode(2 /* PLANAR */);
@@ -575,47 +569,6 @@ var RW;
             return TextureController;
         })();
         TextureEditor.TextureController = TextureController;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var TextureService = (function () {
-            function TextureService($rootScope, canvasService) {
-                this.$rootScope = $rootScope;
-                this.canvasService = canvasService;
-                this._material = $rootScope.material;
-            }
-            TextureService.prototype.changeTexture = function (textureDef) {
-                //TODO cube processing
-                //var texture: BABYLON.Texture;
-                //if (this._setTextures[textureDef.type]) {
-                //    texture = this._setTextures[textureDef.type];
-                //} else {
-                //    var canvasElement = document.getElementById(textureDef.canvasId + "-0");
-                //    texture = new BABYLON.DynamicTexture(textureDef.title, canvasElement, this.$rootScope.scene, false);
-                //}
-                //this._setTextures[textureDef.type] = texture;
-                //if (!textureDef.isEnabled) {
-                //    //not disposing, the texture will simply be reenabled
-                //    this._material[textureDef.propertyInMaterial] = null;
-                //    return;
-                //}
-                //for (var property in textureDef) {
-                //    if (textureDef.hasOwnProperty(property) && texture.hasOwnProperty(property)) {
-                //        texture[property] = textureDef[property];
-                //    }
-                //}
-                //this.canvasService.updateTexture(textureDef.propertyInMaterial, texture);
-            };
-            TextureService.$inject = [
-                '$rootScope',
-                'canvasService'
-            ];
-            return TextureService;
-        })();
-        TextureEditor.TextureService = TextureService;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));

@@ -48,13 +48,9 @@
 
         private initTexture() {
             var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
-            //console.log(canvasElement);
-            //console.log(canvasElement.toDataURL().length);
-            var base64 = canvasElement.toDataURL();//.split(",")[1];
+            var base64 = canvasElement.toDataURL();
             this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64);
-                                   //new BABYLON.DynamicTexture(this.propertyInMaterial, canvasElement, this._material.getScene(), true);
-                                    //new BABYLON.Texture("/Content/AB1_kl.jpg", this._material.getScene(), false);
-            if (name != "reflection") { 
+            if (this.name != "reflection") { 
                 this.coordinatesMode(CoordinatesMode.EXPLICIT);
             } else {
                 this.coordinatesMode(CoordinatesMode.PLANAR);
