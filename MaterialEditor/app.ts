@@ -23,6 +23,7 @@ module RW.TextureEditor {
                     .service("materialService", MaterialService)
                     .service("canvasService", CanvasService)
                     .directive("textureImage", textureImage)
+                    .directive("disableEnableButton", disableEnableButton)
                 ;
 
                 angular.bootstrap(document, [this.app.name]);

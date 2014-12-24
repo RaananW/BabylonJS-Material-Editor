@@ -14,7 +14,7 @@
                         'ui.bootstrap',
                         'colorpicker.module',
                         'ui.slider'
-                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage);
+                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage).directive("disableEnableButton", TextureEditor.disableEnableButton);
 
                     angular.bootstrap(document, [_this.app.name]);
                 });
@@ -245,6 +245,61 @@ var RW;
             return CanvasService;
         })();
         TextureEditor.CanvasService = CanvasService;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        TextureEditor.disableEnableButton = [function () {
+                return {
+                    require: 'ngModel',
+                    link: function (scope, element, attrs, ngModel) {
+                        if (ngModel.$modelValue) {
+                            element.html("Enabled");
+                            element.addClass('btn-success');
+                        } else {
+                            element.html("Disabled");
+                            element.addClass('btn-danger');
+                        }
+                        element.bind('mouseenter', function () {
+                            if (ngModel.$modelValue) {
+                                element.html("Disable");
+                                element.addClass('btn-danger');
+                                element.removeClass('btn-success');
+                            } else {
+                                element.html("Enable");
+                                element.addClass('btn-success');
+                                element.removeClass('btn-danger');
+                            }
+                        });
+                        element.bind('mouseleave', function () {
+                            if (ngModel.$modelValue) {
+                                element.html("Enabled");
+                                element.addClass('btn-success');
+                                element.removeClass('btn-danger');
+                            } else {
+                                element.html("Disabled");
+                                element.addClass('btn-danger');
+                                element.removeClass('btn-success');
+                            }
+                        });
+
+                        //hack due to angulars changing the model later than the click. TODO - find a better way of doing that...
+                        element.bind('click', function () {
+                            if (!ngModel.$modelValue) {
+                                element.html("Enabled");
+                                element.addClass('btn-success');
+                                element.removeClass('btn-danger');
+                            } else {
+                                element.html("Disabled");
+                                element.addClass('btn-danger');
+                                element.removeClass('btn-success');
+                            }
+                        });
+                    }
+                };
+            }];
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));

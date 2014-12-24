@@ -81,8 +81,7 @@
                                             <h4>Frensel Parameters</h4>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="button" class="btn pull-right" ng-class="materialSections[section].frensel.frenselVariable.isEnabled ? 'btn-success' : 'btn-danger'" ng-model="materialSections[section].frensel.frenselVariable.isEnabled" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false">
-                                                {{materialSections[section].frensel.frenselVariable.isEnabled ? 'Disable' : 'Enable'}}
+                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].frensel.frenselVariable.isEnabled" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false">
                                             </button>
                                         </div>
                                         <div class="col-md-12">
@@ -140,8 +139,7 @@
                                             <h4>Texture</h4>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="button" class="btn pull-right" ng-class="materialSections[section].texture.enabled() ? 'btn-success' : 'btn-danger'" ng-model="materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="1" btn-checkbox-false="0">
-                                                {{materialSections[section].texture.enabled() ? 'Disable' : 'Enable'}}
+                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="1" btn-checkbox-false="0">
                                             </button>
                                         </div>
                                         <div class="col-md-12" ng-show="materialSections[section].texture._isEnabled">
