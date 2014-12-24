@@ -1,38 +1,5 @@
 ﻿module RW.TextureEditor {
 
-    export enum ObjectType {
-        SPHERE,
-        BOX,
-        PLANE,
-        CYLINDER,
-        KNOT,
-        TORUS
-    }
-
-    export enum LightType {
-        HEMISPHERIC,
-        SPOT,
-        POINT
-    }
-
-    export interface SceneInit {
-        objectType: ObjectType;
-        lightType: LightType;
-        lightInCameraPosition: boolean;
-        lightPosition?: BABYLON.Vector3;
-    }
-
-    export class SceneInitDefaults implements SceneInit {
-        objectType: ObjectType = ObjectType.SPHERE;
-        lightType: LightType = LightType.HEMISPHERIC;
-        lightInCameraPosition: boolean = true;
-    }
-
-    export class SceneInitImpl implements SceneInit {
-        constructor(public objectType: ObjectType, public lightType: LightType, public lightInCameraPosition: boolean, public lightPosition?: BABYLON.Vector3) {
-        }
-    }
-
     export class CanvasService {
         public static $inject = [
             '$rootScope'

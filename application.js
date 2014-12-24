@@ -1,29 +1,288 @@
 ﻿var RW;
 (function (RW) {
     (function (TextureEditor) {
-        'use strict';
+        (function (ObjectType) {
+            ObjectType[ObjectType["SPHERE"] = 0] = "SPHERE";
+            ObjectType[ObjectType["BOX"] = 1] = "BOX";
+            ObjectType[ObjectType["PLANE"] = 2] = "PLANE";
+            ObjectType[ObjectType["CYLINDER"] = 3] = "CYLINDER";
+            ObjectType[ObjectType["KNOT"] = 4] = "KNOT";
+            ObjectType[ObjectType["TORUS"] = 5] = "TORUS";
+        })(TextureEditor.ObjectType || (TextureEditor.ObjectType = {}));
+        var ObjectType = TextureEditor.ObjectType;
 
-        var AngularStarter = (function () {
-            function AngularStarter(name) {
-                this.name = name;
+        (function (LightType) {
+            LightType[LightType["HEMISPHERIC"] = 0] = "HEMISPHERIC";
+            LightType[LightType["SPOT"] = 1] = "SPOT";
+            LightType[LightType["POINT"] = 2] = "POINT";
+        })(TextureEditor.LightType || (TextureEditor.LightType = {}));
+        var LightType = TextureEditor.LightType;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var FrenselDefinition = (function () {
+            function FrenselDefinition(name, _material) {
+                this._propertyInMaterial = name + 'FresnelParameters';
+                if (_material[this._propertyInMaterial]) {
+                    this.frenselVariable = _material[this._propertyInMaterial];
+                } else {
+                    this.frenselVariable = new BABYLON.FresnelParameters();
+                    this.frenselVariable.isEnabled = false;
+                    _material[this._propertyInMaterial] = this.frenselVariable;
+                }
+                this.leftColor = new TextureEditor.HexToBabylon("left", _material[this._propertyInMaterial]), this.rightColor = new TextureEditor.HexToBabylon("right", _material[this._propertyInMaterial]);
             }
-            AngularStarter.prototype.start = function () {
-                var _this = this;
-                $(document).ready(function () {
-                    _this.app = angular.module(name, [
-                        'ui.bootstrap',
-                        'colorpicker.module',
-                        'ui.slider'
-                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage);
-
-                    angular.bootstrap(document, [_this.app.name]);
-                });
-            };
-            return AngularStarter;
+            return FrenselDefinition;
         })();
-        TextureEditor.AngularStarter = AngularStarter;
+        TextureEditor.FrenselDefinition = FrenselDefinition;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var HexToBabylon = (function () {
+            function HexToBabylon(propertyName, _variable) {
+                this.propertyName = propertyName;
+                this._variable = _variable;
+                this.propertyName += "Color";
+                this._setBabylonColor(_variable[this.propertyName]);
+            }
+            //angular getter/setter
+            HexToBabylon.prototype.hex = function (hex) {
+                if (hex) {
+                    this._hex = hex;
+                    this.babylonColor = this.convertStringToBabylonArray(this._hex);
+                    if (this.babylonColor) {
+                        this._variable[this.propertyName] = this.babylonColor;
+                    }
+                } else {
+                    return this._hex;
+                }
+            };
 
-        new AngularStarter('materialEditor').start();
+            HexToBabylon.prototype._setBabylonColor = function (color) {
+                this.babylonColor = color;
+                var hex = "#";
+                ['r', 'g', 'b'].forEach(function (channel) {
+                    var c = color[channel] * 255;
+                    hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
+                });
+
+                this._hex = hex;
+            };
+
+            HexToBabylon.prototype.convertStringToBabylonArray = function (hex) {
+                //http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+                var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+                hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+                    return r + r + g + g + b + b;
+                });
+
+                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? BABYLON.Color3.FromArray([
+                    parseInt(result[1], 16) / 255,
+                    parseInt(result[2], 16) / 255,
+                    parseInt(result[3], 16) / 255
+                ]) : null;
+            };
+            return HexToBabylon;
+        })();
+        TextureEditor.HexToBabylon = HexToBabylon;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var MaterialDefinitionSection = (function () {
+            function MaterialDefinitionSection(name, _material, hasColor, hasTexture, hasFrensel) {
+                this.name = name;
+                this._material = _material;
+                this.hasColor = hasColor;
+                this.hasTexture = hasTexture;
+                this.hasFrensel = hasFrensel;
+                if (hasColor) {
+                    this.color = new TextureEditor.HexToBabylon(name, _material);
+                }
+                if (hasTexture) {
+                    this.texture = new TextureEditor.TextureDefinition(name, _material);
+                }
+                if (hasFrensel) {
+                    this.frensel = new TextureEditor.FrenselDefinition(name, _material);
+                }
+            }
+            return MaterialDefinitionSection;
+        })();
+        TextureEditor.MaterialDefinitionSection = MaterialDefinitionSection;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var MaterialService = (function () {
+            function MaterialService($rootScope, canvasService) {
+                this.$rootScope = $rootScope;
+                this.canvasService = canvasService;
+                this.initMaterialSections();
+            }
+            MaterialService.prototype.initMaterialSections = function () {
+                this.materialSections = {};
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
+            };
+
+            MaterialService.prototype.getMaterialSectionsArray = function () {
+                return Object.keys(this.materialSections);
+            };
+
+            MaterialService.prototype.getMaterialSections = function () {
+                return this.materialSections;
+            };
+            MaterialService.$inject = [
+                '$rootScope',
+                'canvasService'
+            ];
+            return MaterialService;
+        })();
+        TextureEditor.MaterialService = MaterialService;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var TextureDefinition = (function () {
+            function TextureDefinition(name, _material) {
+                var _this = this;
+                this.name = name;
+                this._material = _material;
+                //TODO implement video support etc'. At the moment only dynamic is supported.
+                /*public setBabylonTextureType(type: BabylonTextureType) {
+                this.babylonTextureType = type;
+                if (type === BabylonTextureType.CUBE) {
+                this.coordinatesMode(CoordinatesMode.CUBIC);
+                }
+                }*/
+                //for ng-repeat
+                this.getCanvasNumber = function () {
+                    return new Array(_this.numberOfImages);
+                };
+                this.propertyInMaterial = this.name.toLowerCase() + "Texture";
+                this.canvasId = this.name + "Canvas";
+                this.numberOfImages = 1;
+                if (this._material[this.propertyInMaterial]) {
+                    this.enabled(true);
+                    this.initFromMaterial();
+                } else {
+                    this.enabled(false);
+                    this.init = false;
+
+                    //clean canvas
+                    var canvasElement = document.getElementById(this.canvasId + "-0");
+                    if (canvasElement) {
+                        var context = canvasElement.getContext("2d");
+                        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    }
+                }
+            }
+            TextureDefinition.prototype.initTexture = function () {
+                if (this.textureVariable) {
+                    this.textureVariable.dispose();
+                }
+                var canvasElement = document.getElementById(this.canvasId + "-0");
+                var base64 = canvasElement.toDataURL();
+                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
+                if (this.name != "reflection") {
+                    this.coordinatesMode(0 /* EXPLICIT */);
+                } else {
+                    this.coordinatesMode(2 /* PLANAR */);
+                }
+
+                //this.babylonTextureType = BabylonTextureType.NORMAL;
+                this.init = true;
+            };
+
+            TextureDefinition.prototype.initFromMaterial = function () {
+                //update canvas
+                this.textureVariable = this._material[this.propertyInMaterial];
+
+                //TODO since deleteBuffer = false, material[texture]._buffer is the base64 image. Update the canvas with it!
+                this.init = true;
+            };
+
+            TextureDefinition.prototype.coordinatesMode = function (mode) {
+                if (angular.isDefined(mode)) {
+                    this.textureVariable.coordinatesMode = mode;
+                    if (mode === 3 /* CUBIC */) {
+                        this.numberOfImages = 6;
+                    } else {
+                        this.numberOfImages = 1;
+                    }
+                } else {
+                    return this.textureVariable ? this.textureVariable.coordinatesMode : 0;
+                }
+            };
+
+            TextureDefinition.prototype.enabled = function (enabled) {
+                if (angular.isDefined(enabled)) {
+                    if (enabled) {
+                        if (this.textureVariable)
+                            this._material[this.propertyInMaterial] = this.textureVariable;
+                        this._isEnabled = true;
+                    } else {
+                        if (this._material[this.propertyInMaterial]) {
+                            this._material[this.propertyInMaterial].dispose();
+                            this._material[this.propertyInMaterial] = null;
+                        }
+                        this._isEnabled = false;
+                    }
+                } else {
+                    return this._isEnabled ? 1 : 0;
+                }
+            };
+
+            TextureDefinition.prototype.canvasUpdated = function () {
+                this.initTexture();
+                if (this._isEnabled) {
+                    this._material[this.propertyInMaterial] = this.textureVariable;
+                }
+            };
+            return TextureDefinition;
+        })();
+        TextureEditor.TextureDefinition = TextureDefinition;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        (function (BabylonTextureType) {
+            BabylonTextureType[BabylonTextureType["DYNAMIC"] = 0] = "DYNAMIC";
+            BabylonTextureType[BabylonTextureType["NORMAL"] = 1] = "NORMAL";
+            BabylonTextureType[BabylonTextureType["VIDEO"] = 2] = "VIDEO";
+            BabylonTextureType[BabylonTextureType["CUBE"] = 3] = "CUBE";
+        })(TextureEditor.BabylonTextureType || (TextureEditor.BabylonTextureType = {}));
+        var BabylonTextureType = TextureEditor.BabylonTextureType;
+
+        (function (CoordinatesMode) {
+            //(0 = explicit, 1 spherical, 2 = planar, 3 = cubic, 4 = projection, 5 = skybox)
+            CoordinatesMode[CoordinatesMode["EXPLICIT"] = 0] = "EXPLICIT";
+            CoordinatesMode[CoordinatesMode["SPHERICAL"] = 1] = "SPHERICAL";
+            CoordinatesMode[CoordinatesMode["PLANAR"] = 2] = "PLANAR";
+            CoordinatesMode[CoordinatesMode["CUBIC"] = 3] = "CUBIC";
+            CoordinatesMode[CoordinatesMode["PROJECTION"] = 4] = "PROJECTION";
+        })(TextureEditor.CoordinatesMode || (TextureEditor.CoordinatesMode = {}));
+        var CoordinatesMode = TextureEditor.CoordinatesMode;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -85,44 +344,6 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        (function (ObjectType) {
-            ObjectType[ObjectType["SPHERE"] = 0] = "SPHERE";
-            ObjectType[ObjectType["BOX"] = 1] = "BOX";
-            ObjectType[ObjectType["PLANE"] = 2] = "PLANE";
-            ObjectType[ObjectType["CYLINDER"] = 3] = "CYLINDER";
-            ObjectType[ObjectType["KNOT"] = 4] = "KNOT";
-            ObjectType[ObjectType["TORUS"] = 5] = "TORUS";
-        })(TextureEditor.ObjectType || (TextureEditor.ObjectType = {}));
-        var ObjectType = TextureEditor.ObjectType;
-
-        (function (LightType) {
-            LightType[LightType["HEMISPHERIC"] = 0] = "HEMISPHERIC";
-            LightType[LightType["SPOT"] = 1] = "SPOT";
-            LightType[LightType["POINT"] = 2] = "POINT";
-        })(TextureEditor.LightType || (TextureEditor.LightType = {}));
-        var LightType = TextureEditor.LightType;
-
-        var SceneInitDefaults = (function () {
-            function SceneInitDefaults() {
-                this.objectType = 0 /* SPHERE */;
-                this.lightType = 0 /* HEMISPHERIC */;
-                this.lightInCameraPosition = true;
-            }
-            return SceneInitDefaults;
-        })();
-        TextureEditor.SceneInitDefaults = SceneInitDefaults;
-
-        var SceneInitImpl = (function () {
-            function SceneInitImpl(objectType, lightType, lightInCameraPosition, lightPosition) {
-                this.objectType = objectType;
-                this.lightType = lightType;
-                this.lightInCameraPosition = lightInCameraPosition;
-                this.lightPosition = lightPosition;
-            }
-            return SceneInitImpl;
-        })();
-        TextureEditor.SceneInitImpl = SceneInitImpl;
-
         var CanvasService = (function () {
             function CanvasService($rootScope) {
                 var _this = this;
@@ -248,92 +469,6 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        var FrenselDefinition = (function () {
-            function FrenselDefinition(name, _material) {
-                this._propertyInMaterial = name + 'FresnelParameters';
-                if (_material[this._propertyInMaterial]) {
-                    this.frenselVariable = _material[this._propertyInMaterial];
-                } else {
-                    this.frenselVariable = new BABYLON.FresnelParameters();
-                    this.frenselVariable.isEnabled = false;
-                    _material[this._propertyInMaterial] = this.frenselVariable;
-                }
-                this.leftColor = new HexToBabylon("left", _material[this._propertyInMaterial]), this.rightColor = new HexToBabylon("right", _material[this._propertyInMaterial]);
-            }
-            return FrenselDefinition;
-        })();
-        TextureEditor.FrenselDefinition = FrenselDefinition;
-
-        var MaterialDefinitionSection = (function () {
-            function MaterialDefinitionSection(name, _material, hasColor, hasTexture, hasFrensel) {
-                this.name = name;
-                this._material = _material;
-                this.hasColor = hasColor;
-                this.hasTexture = hasTexture;
-                this.hasFrensel = hasFrensel;
-                if (hasColor) {
-                    this.color = new HexToBabylon(name, _material);
-                }
-                if (hasTexture) {
-                    this.texture = new TextureEditor.TextureDefinition(name, _material);
-                }
-                if (hasFrensel) {
-                    this.frensel = new FrenselDefinition(name, _material);
-                }
-            }
-            return MaterialDefinitionSection;
-        })();
-        TextureEditor.MaterialDefinitionSection = MaterialDefinitionSection;
-
-        var HexToBabylon = (function () {
-            function HexToBabylon(propertyName, _variable) {
-                this.propertyName = propertyName;
-                this._variable = _variable;
-                this.propertyName += "Color";
-                this._setBabylonColor(_variable[this.propertyName]);
-            }
-            //angular getter/setter
-            HexToBabylon.prototype.hex = function (hex) {
-                if (hex) {
-                    this._hex = hex;
-                    this.babylonColor = this.convertStringToBabylonArray(this._hex);
-                    if (this.babylonColor) {
-                        this._variable[this.propertyName] = this.babylonColor;
-                    }
-                } else {
-                    return this._hex;
-                }
-            };
-
-            HexToBabylon.prototype._setBabylonColor = function (color) {
-                this.babylonColor = color;
-                var hex = "#";
-                ['r', 'g', 'b'].forEach(function (channel) {
-                    var c = color[channel] * 255;
-                    hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
-                });
-
-                this._hex = hex;
-            };
-
-            HexToBabylon.prototype.convertStringToBabylonArray = function (hex) {
-                //http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-                var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-                hex = hex.replace(shorthandRegex, function (m, r, g, b) {
-                    return r + r + g + g + b + b;
-                });
-
-                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? BABYLON.Color3.FromArray([
-                    parseInt(result[1], 16) / 255,
-                    parseInt(result[2], 16) / 255,
-                    parseInt(result[3], 16) / 255
-                ]) : null;
-            };
-            return HexToBabylon;
-        })();
-        TextureEditor.HexToBabylon = HexToBabylon;
-
         var MaterialController = (function () {
             function MaterialController($scope, canvasService, materialService) {
                 var _this = this;
@@ -368,43 +503,6 @@ var RW;
             return MaterialController;
         })();
         TextureEditor.MaterialController = MaterialController;
-    })(RW.TextureEditor || (RW.TextureEditor = {}));
-    var TextureEditor = RW.TextureEditor;
-})(RW || (RW = {}));
-var RW;
-(function (RW) {
-    (function (TextureEditor) {
-        var MaterialService = (function () {
-            function MaterialService($rootScope, canvasService) {
-                this.$rootScope = $rootScope;
-                this.canvasService = canvasService;
-                this.initMaterialSections();
-            }
-            MaterialService.prototype.initMaterialSections = function () {
-                this.materialSections = {};
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
-            };
-
-            MaterialService.prototype.getMaterialSectionsArray = function () {
-                return Object.keys(this.materialSections);
-            };
-
-            MaterialService.prototype.getMaterialSections = function () {
-                return this.materialSections;
-            };
-            MaterialService.$inject = [
-                '$rootScope',
-                'canvasService'
-            ];
-            return MaterialService;
-        })();
-        TextureEditor.MaterialService = MaterialService;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -498,136 +596,6 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        (function (TextureType) {
-            TextureType[TextureType["DIFFUSE"] = 0] = "DIFFUSE";
-            TextureType[TextureType["BUMP"] = 1] = "BUMP";
-            TextureType[TextureType["SPECULAR"] = 2] = "SPECULAR";
-            TextureType[TextureType["REFLECTION"] = 3] = "REFLECTION";
-            TextureType[TextureType["OPACITY"] = 4] = "OPACITY";
-            TextureType[TextureType["EMISSIVE"] = 5] = "EMISSIVE";
-            TextureType[TextureType["AMBIENT"] = 6] = "AMBIENT";
-        })(TextureEditor.TextureType || (TextureEditor.TextureType = {}));
-        var TextureType = TextureEditor.TextureType;
-
-        (function (BabylonTextureType) {
-            BabylonTextureType[BabylonTextureType["DYNAMIC"] = 0] = "DYNAMIC";
-            BabylonTextureType[BabylonTextureType["BASE"] = 1] = "BASE";
-            BabylonTextureType[BabylonTextureType["VIDEO"] = 2] = "VIDEO";
-            BabylonTextureType[BabylonTextureType["CUBE"] = 3] = "CUBE";
-        })(TextureEditor.BabylonTextureType || (TextureEditor.BabylonTextureType = {}));
-        var BabylonTextureType = TextureEditor.BabylonTextureType;
-
-        (function (CoordinatesMode) {
-            //(0 = explicit, 1 spherical, 2 = planar, 3 = cubic, 4 = projection, 5 = skybox)
-            CoordinatesMode[CoordinatesMode["EXPLICIT"] = 0] = "EXPLICIT";
-            CoordinatesMode[CoordinatesMode["SPHERICAL"] = 1] = "SPHERICAL";
-            CoordinatesMode[CoordinatesMode["PLANAR"] = 2] = "PLANAR";
-            CoordinatesMode[CoordinatesMode["CUBIC"] = 3] = "CUBIC";
-            CoordinatesMode[CoordinatesMode["PROJECTION"] = 4] = "PROJECTION";
-        })(TextureEditor.CoordinatesMode || (TextureEditor.CoordinatesMode = {}));
-        var CoordinatesMode = TextureEditor.CoordinatesMode;
-
-        var TextureDefinition = (function () {
-            function TextureDefinition(name, _material) {
-                var _this = this;
-                this.name = name;
-                this._material = _material;
-                //TODO implement video support etc'. At the moment only dynamic is supported.
-                /*public setBabylonTextureType(type: BabylonTextureType) {
-                this.babylonTextureType = type;
-                if (type === BabylonTextureType.CUBE) {
-                this.coordinatesMode(CoordinatesMode.CUBIC);
-                }
-                }*/
-                //for ng-repeat
-                this.getCanvasNumber = function () {
-                    return new Array(_this.numberOfImages);
-                };
-                this.propertyInMaterial = this.name.toLowerCase() + "Texture";
-                this.canvasId = this.name + "Canvas";
-                this.numberOfImages = 1;
-                if (this._material[this.propertyInMaterial]) {
-                    console.log("found");
-                    this.enabled(true);
-                    this.initFromMaterial();
-                } else {
-                    this.enabled(false);
-                    this.init = false;
-
-                    //clean canvas
-                    var canvasElement = document.getElementById(this.canvasId + "-0");
-                    if (canvasElement) {
-                        var context = canvasElement.getContext("2d");
-                        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
-                    }
-                }
-            }
-            TextureDefinition.prototype.initTexture = function () {
-                if (this.textureVariable) {
-                    this.textureVariable.dispose();
-                }
-                var canvasElement = document.getElementById(this.canvasId + "-0");
-                var base64 = canvasElement.toDataURL();
-                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
-                if (this.name != "reflection") {
-                    this.coordinatesMode(0 /* EXPLICIT */);
-                } else {
-                    this.coordinatesMode(2 /* PLANAR */);
-                }
-                this.babylonTextureType = 0 /* DYNAMIC */;
-                this.init = true;
-            };
-
-            TextureDefinition.prototype.initFromMaterial = function () {
-                //update canvas
-                this.textureVariable = this._material[this.propertyInMaterial];
-
-                //TODO since deleteBuffer = false, material[texture]._buffer is the base64 image. Update the canvas with it!
-                this.init = true;
-                this.enabled(true);
-            };
-
-            TextureDefinition.prototype.coordinatesMode = function (mode) {
-                if (angular.isDefined(mode)) {
-                    this.textureVariable.coordinatesMode = mode;
-                    if (mode === 3 /* CUBIC */) {
-                        this.numberOfImages = 6;
-                    } else {
-                        this.numberOfImages = 1;
-                    }
-                } else {
-                    return this.textureVariable ? this.textureVariable.coordinatesMode : 0;
-                }
-            };
-
-            TextureDefinition.prototype.enabled = function (enabled) {
-                if (angular.isDefined(enabled)) {
-                    if (enabled) {
-                        if (this.textureVariable)
-                            this._material[this.propertyInMaterial] = this.textureVariable;
-                        this._isEnabled = true;
-                    } else {
-                        if (this._material[this.propertyInMaterial]) {
-                            this._material[this.propertyInMaterial].dispose();
-                            this._material[this.propertyInMaterial] = null;
-                        }
-                        this._isEnabled = false;
-                    }
-                } else {
-                    return this._isEnabled ? 1 : 0;
-                }
-            };
-
-            TextureDefinition.prototype.canvasUpdated = function () {
-                this.initTexture();
-                if (this._isEnabled) {
-                    this._material[this.propertyInMaterial] = this.textureVariable;
-                }
-            };
-            return TextureDefinition;
-        })();
-        TextureEditor.TextureDefinition = TextureDefinition;
-
         var TextureController = (function () {
             function TextureController($scope, canvasService, materialService) {
                 this.$scope = $scope;
@@ -642,6 +610,35 @@ var RW;
             return TextureController;
         })();
         TextureEditor.TextureController = TextureController;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        'use strict';
+
+        var AngularStarter = (function () {
+            function AngularStarter(name) {
+                this.name = name;
+            }
+            AngularStarter.prototype.start = function () {
+                var _this = this;
+                $(document).ready(function () {
+                    _this.app = angular.module(name, [
+                        'ui.bootstrap',
+                        'colorpicker.module',
+                        'ui.slider'
+                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage);
+
+                    angular.bootstrap(document, [_this.app.name]);
+                });
+            };
+            return AngularStarter;
+        })();
+        TextureEditor.AngularStarter = AngularStarter;
+
+        new AngularStarter('materialEditor').start();
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
