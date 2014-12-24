@@ -568,7 +568,7 @@ var RW;
                 }
                 var canvasElement = document.getElementById(this.canvasId + "-0");
                 var base64 = canvasElement.toDataURL();
-                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64);
+                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
                 if (this.name != "reflection") {
                     this.coordinatesMode(0 /* EXPLICIT */);
                 } else {
@@ -581,7 +581,8 @@ var RW;
             TextureDefinition.prototype.initFromMaterial = function () {
                 //update canvas
                 this.textureVariable = this._material[this.propertyInMaterial];
-                console.log(this.textureVariable);
+
+                //TODO since deleteBuffer = false, material[texture]._buffer is the base64 image. Update the canvas with it!
                 this.init = true;
                 this.enabled(true);
             };
