@@ -25,8 +25,8 @@ Roadmap / Future plans
 * Exporting the material as javascript / babylonjs material
 * Allow uploading the canvas images to a server
 * ~~New UI~~
-* Change light properties
-* Adaptation to BabylonJS 2.0
+* ~~Change light properties~~
+* ~~Adaptation to BabylonJS 2.0~~
 * Upload your own object
 * Multimaterial support
 * Video support
