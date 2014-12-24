@@ -256,13 +256,18 @@ var RW;
                     require: 'ngModel',
                     priority: 1,
                     link: function (scope, element, attrs, ngModel) {
-                        if (ngModel.$modelValue) {
-                            element.html("Enabled");
-                            element.addClass('btn-success');
-                        } else {
-                            element.html("Disabled");
-                            element.addClass('btn-danger');
+                        function resetButton() {
+                            if (ngModel.$modelValue) {
+                                element.html("Enabled");
+                                element.addClass('btn-success');
+                                element.removeClass('btn-danger');
+                            } else {
+                                element.html("Disabled");
+                                element.addClass('btn-danger');
+                                element.removeClass('btn-success');
+                            }
                         }
+
                         element.bind('mouseenter', function () {
                             if (ngModel.$modelValue) {
                                 element.html("Disable");
@@ -274,29 +279,11 @@ var RW;
                                 element.removeClass('btn-danger');
                             }
                         });
-                        element.bind('mouseleave', function () {
-                            if (ngModel.$modelValue) {
-                                element.html("Enabled");
-                                element.addClass('btn-success');
-                                element.removeClass('btn-danger');
-                            } else {
-                                element.html("Disabled");
-                                element.addClass('btn-danger');
-                                element.removeClass('btn-success');
-                            }
-                        });
+                        element.bind('mouseleave', resetButton);
 
-                        ngModel.$render = function () {
-                            if (ngModel.$modelValue) {
-                                element.html("Enabled");
-                                element.addClass('btn-success');
-                                element.removeClass('btn-danger');
-                            } else {
-                                element.html("Disabled");
-                                element.addClass('btn-danger');
-                                element.removeClass('btn-success');
-                            }
-                        };
+                        ngModel.$render = resetButton;
+
+                        resetButton();
                     }
                 };
             }];
