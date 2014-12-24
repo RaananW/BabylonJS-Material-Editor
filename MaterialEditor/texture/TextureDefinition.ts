@@ -73,7 +73,7 @@
                     this._isEnabled = true;
                 } else {
                     if (this._material[this.propertyInMaterial]) {
-                        this._material[this.propertyInMaterial].dispose();
+                        //this._material[this.propertyInMaterial].dispose();
                         this._material[this.propertyInMaterial] = null;
                     }
                     this._isEnabled = false;
