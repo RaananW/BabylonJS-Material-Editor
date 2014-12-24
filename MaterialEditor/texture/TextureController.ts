@@ -38,15 +38,30 @@
 
         public textureVariable: BABYLON.Texture;
 
-        constructor(public name: string, private _material:BABYLON.StandardMaterial) {
+        constructor(public name: string, private _material: BABYLON.StandardMaterial) {
             this.propertyInMaterial = this.name.toLowerCase() + "Texture";
             this.canvasId = this.name + "Canvas";
-            this.enabled(false);
             this.numberOfImages = 1;
-            this.init = false;
+            if (this._material[this.propertyInMaterial]) {
+                console.log("found");
+                this.enabled(true);
+                this.initFromMaterial();
+            } else {
+                this.enabled(false);
+                this.init = false;
+                //clean canvas
+                var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
+                if (canvasElement) {
+                    var context = canvasElement.getContext("2d");
+                    context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                }
+            }
         }
 
         private initTexture() {
+            if (this.textureVariable) {
+                this.textureVariable.dispose();
+            }
             var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
             var base64 = canvasElement.toDataURL();
             this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64);
@@ -57,6 +72,14 @@
             }
             this.babylonTextureType = BabylonTextureType.DYNAMIC;
             this.init = true;
+        }
+
+        private initFromMaterial() {
+            //update canvas
+            this.textureVariable = this._material[this.propertyInMaterial]
+            console.log(this.textureVariable);
+            this.init = true;
+            this.enabled(true);
         }
         
         public coordinatesMode(mode: CoordinatesMode) {
@@ -75,10 +98,14 @@
         public enabled(enabled: boolean) {
             if (angular.isDefined(enabled)) {
                 if (enabled) {
-                    this._material[this.propertyInMaterial] = this.textureVariable;
+                    if(this.textureVariable)
+                        this._material[this.propertyInMaterial] = this.textureVariable;
                     this._isEnabled = true;
                 } else {
-                    this._material[this.propertyInMaterial] = null;
+                    if (this._material[this.propertyInMaterial]) {
+                        this._material[this.propertyInMaterial].dispose();
+                        this._material[this.propertyInMaterial] = null;
+                    }
                     this._isEnabled = false;
                 }
                 
@@ -88,9 +115,10 @@
         }
 
         public canvasUpdated() {
-                this.initTexture();
-                if(this._isEnabled)
-                    this._material[this.propertyInMaterial] = this.textureVariable;
+            this.initTexture();
+            if (this._isEnabled) {
+                this._material[this.propertyInMaterial] = this.textureVariable;
+            }
         }
         
         //TODO implement video support etc'. At the moment only dynamic is supported.

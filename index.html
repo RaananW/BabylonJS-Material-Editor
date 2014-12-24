@@ -39,6 +39,9 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="row" ng-controller="MaterialController as materialController">
+                    <div class="col-md-12 alphaDiv">
+
+                    </div>
                     <div class="col-md-12">
                         <div class="btn-group">
                             <label class="btn btn-primary" ng-model="material.wireframe" btn-checkbox>Wireframe</label>
@@ -146,7 +149,7 @@
                                                 <div class="col-md-4">
                                                     <texture-image tex="materialSections[section].texture" on-update-texture="updateTexture($name)"></texture-image>
                                                 </div>
-                                                <div class="col-md-8" collapse="!materialSections[section].texture.init">
+                                                <div class="col-md-8" ng-show="materialSections[section].texture.init">
                                                     <div class="col-md-12" ng-show="section=='reflection'">
                                                         <h4>Coordinates Mode</h4>
                                                         <div class="btn-group" role="group" aria-label="...">
@@ -240,8 +243,8 @@
                 </div>
             </div>
             <div class="col-md-4" ng-controller="CanvasController as canvasController">
-                <h4>Object Type</h4>
-                <select class="form-control" ng-model="canvasController.selectedObjectType" ng-options="type.name for type in canvasController.objectTypes" ng-change="canvasController.typeChanged()"></select>
+                <h4>Mesh</h4>
+                <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
                 <h4>Light Type</h4>
                 <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.typeChanged()"></select>
                 <div class="row alphaDiv">

@@ -17,9 +17,13 @@
 
         constructor(name: string, _material: BABYLON.StandardMaterial) {
             this._propertyInMaterial = name + 'FresnelParameters';
-            this.frenselVariable = new BABYLON.FresnelParameters();
-            this.frenselVariable.isEnabled = false;
-            _material[this._propertyInMaterial] = this.frenselVariable;
+            if (_material[this._propertyInMaterial]) {
+                this.frenselVariable = _material[this._propertyInMaterial];
+            } else {
+                this.frenselVariable = new BABYLON.FresnelParameters();
+                this.frenselVariable.isEnabled = false;
+                _material[this._propertyInMaterial] = this.frenselVariable;
+            }
             this.leftColor = new HexToBabylon("left", _material[this._propertyInMaterial]),
             this.rightColor = new HexToBabylon("right", _material[this._propertyInMaterial])
             
@@ -116,6 +120,14 @@
                     $scope.materialSections[type].texture.canvasUpdated();
                 });
             }
+
+            $scope.$on("objectChanged", () => {
+                console.log("changed");
+                this.materialService.initMaterialSections();
+                $scope.material = this.canvasService.getMaterial();
+                $scope.sectionNames = this.materialService.getMaterialSectionsArray();
+                $scope.materialSections = this.materialService.getMaterialSections();
+            });
         }
     }
 }
