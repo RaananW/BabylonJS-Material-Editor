@@ -20,11 +20,6 @@
             private canvasService: CanvasService,
             private materialService:MaterialService
             ) {
-            //todo will this work??
-            $scope.material = this.canvasService.getMaterial();
-
-            $scope.sectionNames = this.materialService.getMaterialSectionsArray();
-            $scope.materialSections = this.materialService.getMaterialSections();
 
             $scope.updateTexture = (type) => {
                 $scope.$apply(() => {
@@ -32,13 +27,14 @@
                 });
             }
 
-            $scope.$on("objectChanged", () => {
-                console.log("changed");
-                this.materialService.initMaterialSections();
-                $scope.material = this.canvasService.getMaterial();
-                $scope.sectionNames = this.materialService.getMaterialSectionsArray();
-                $scope.materialSections = this.materialService.getMaterialSections();
-            });
+            $scope.$on("objectChanged", this.afterObjectChanged);
+        }
+
+        public afterObjectChanged = () => {
+            this.materialService.initMaterialSections();
+            this.$scope.material = this.canvasService.getMaterial();
+            this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
+            this.$scope.materialSections = this.materialService.getMaterialSections();
         }
     }
 }

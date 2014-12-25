@@ -36,22 +36,28 @@ var RW;
                 this.$scope = $scope;
                 this.$timeout = $timeout;
                 this.canvasService = canvasService;
-                this.objectTypes = [];
-                this.lightTypes = [];
-                var meshes = canvasService.getObjects();
-                for (var pos = 0; pos < meshes.length; pos++) {
-                    this.objectTypes.push({ name: meshes[pos].name, value: pos });
-                }
-                ;
-
-                this.selectedObjectPosition = this.objectTypes[0];
-
+                this.resetLightParameters = function (light) {
+                    _this.$scope.light = light;
+                    _this.$scope.lightSpecularColor = new TextureEditor.HexToBabylon('specular', light, "");
+                    _this.$scope.lightDiffuseColor = new TextureEditor.HexToBabylon('diffuse', light, "");
+                };
                 this.lightTypes = [
                     { name: 'Hemispheric', type: 0 /* HEMISPHERIC */ },
-                    //{ name: 'Spot', type: LightType.SPOT },
                     { name: 'Point (in camera position)', type: 2 /* POINT */ }
                 ];
+
                 this.selectedLightType = this.lightTypes[0];
+
+                $scope.$on("sceneReset", function () {
+                    var meshes = canvasService.getObjects();
+                    _this.objectTypes = [];
+                    for (var pos = 0; pos < meshes.length; pos++) {
+                        _this.objectTypes.push({ name: meshes[pos].name, value: pos });
+                    }
+                    ;
+
+                    _this.selectedObjectPosition = _this.objectTypes[0];
+                });
 
                 $scope.$on("objectChanged", function (event, object) {
                     $timeout(function () {
@@ -64,22 +70,23 @@ var RW;
                 });
 
                 $scope.$on("lightChanged", function (event, light) {
-                    $scope['light'] = light;
-                    $scope['lightSpecularColor'] = new TextureEditor.HexToBabylon('specular', light, "");
-                    $scope['lightDiffuseColor'] = new TextureEditor.HexToBabylon('diffuse', light, "");
+                    _this.resetLightParameters(light);
                 });
 
-                $scope['lightConfigure'] = true;
-
+                $scope.lightConfigure = true;
+                this.canvasService.resetScene();
                 this.canvasService.initLight();
             }
-            CanvasController.prototype.typeChanged = function () {
+            CanvasController.prototype.lightTypeChanged = function () {
                 this.canvasService.initLight(this.selectedLightType.type);
-                //this.canvasService.initScene(new SceneInitImpl(this.selectedObjectType.type, this.selectedLightType.type, true));
             };
 
             CanvasController.prototype.objectSelected = function () {
                 this.canvasService.selectObjectInPosition(this.selectedObjectPosition.value);
+            };
+
+            CanvasController.prototype.resetScene = function () {
+                this.canvasService.resetScene();
             };
             CanvasController.$inject = [
                 '$scope',
@@ -125,17 +132,11 @@ var RW;
                 this._engine = new BABYLON.Engine(this._canvasElement);
                 this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
 
-                //init material
-                //$rootScope.material = new BABYLON.StandardMaterial("material", this._scene);
                 this._camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 10, 0.8, 30, new BABYLON.Vector3(0, 0, 0), this._scene);
                 this._camera.wheelPrecision = 20;
 
-                this._camera.attachControl(this._canvasElement, true);
+                this._camera.attachControl(this._canvasElement, false);
 
-                //this.initScene(new SceneInitDefaults());
-                this.createDefaultScene();
-
-                //this.initLight();
                 this._engine.runRenderLoop(function () {
                     _this._scene.render();
                 });
@@ -163,6 +164,15 @@ var RW;
                 this._textureObject.material[property] = texture;
             };
 
+            CanvasService.prototype.resetScene = function () {
+                for (var i = this._scene.meshes.length - 1; i > -1; i--) {
+                    this._scene.meshes[i].dispose();
+                }
+                this.createDefaultScene();
+                this.$rootScope.$broadcast("sceneReset");
+                this.selectObject(this._scene.meshes[0]);
+            };
+
             CanvasService.prototype.createDefaultScene = function () {
                 var _this = this;
                 //taken shamelessly from babylon's playground!
@@ -171,8 +181,8 @@ var RW;
                 var box = BABYLON.Mesh.CreateBox("Box", 6.0, scene);
                 var sphere = BABYLON.Mesh.CreateSphere("Sphere", 10.0, 10.0, scene);
                 var plan = BABYLON.Mesh.CreatePlane("Plane", 10.0, scene);
-                var cylinder = BABYLON.Mesh.CreateCylinder("Cylinder", 3, 3, 3, 6, 1, scene, false);
-                var torus = BABYLON.Mesh.CreateTorus("Torus", 5, 1, 10, scene, false);
+                var cylinder = BABYLON.Mesh.CreateCylinder("Cylinder", 3, 3, 3, 6, 1, scene);
+                var torus = BABYLON.Mesh.CreateTorus("Torus", 5, 1, 10, scene);
                 var knot = BABYLON.Mesh.CreateTorusKnot("Knot", 2, 0.5, 128, 64, 2, 3, scene);
 
                 box.position = new BABYLON.Vector3(-10, 0, 0);
@@ -188,11 +198,11 @@ var RW;
                     mesh.actionManager = new BABYLON.ActionManager(_this._scene);
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
-                    mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnLeftPickTrigger, function () {
+                    mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, function (evt) {
+                        console.log(evt);
                         _this.selectObject(mesh);
                     }));
                 });
-                this.selectObject(box);
             };
 
             CanvasService.prototype.initLight = function (lightType) {
@@ -301,25 +311,19 @@ var RW;
                 this.$scope = $scope;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
-                //todo will this work??
-                $scope.material = this.canvasService.getMaterial();
-
-                $scope.sectionNames = this.materialService.getMaterialSectionsArray();
-                $scope.materialSections = this.materialService.getMaterialSections();
-
+                this.afterObjectChanged = function () {
+                    _this.materialService.initMaterialSections();
+                    _this.$scope.material = _this.canvasService.getMaterial();
+                    _this.$scope.sectionNames = _this.materialService.getMaterialSectionsArray();
+                    _this.$scope.materialSections = _this.materialService.getMaterialSections();
+                };
                 $scope.updateTexture = function (type) {
                     $scope.$apply(function () {
                         $scope.materialSections[type].texture.canvasUpdated();
                     });
                 };
 
-                $scope.$on("objectChanged", function () {
-                    console.log("changed");
-                    _this.materialService.initMaterialSections();
-                    $scope.material = _this.canvasService.getMaterial();
-                    $scope.sectionNames = _this.materialService.getMaterialSectionsArray();
-                    $scope.materialSections = _this.materialService.getMaterialSections();
-                });
+                $scope.$on("objectChanged", this.afterObjectChanged);
             }
             MaterialController.$inject = [
                 '$scope',
@@ -339,7 +343,7 @@ var RW;
             function MaterialService($rootScope, canvasService) {
                 this.$rootScope = $rootScope;
                 this.canvasService = canvasService;
-                this.initMaterialSections();
+                //this.initMaterialSections();
             }
             MaterialService.prototype.initMaterialSections = function () {
                 this.materialSections = {};

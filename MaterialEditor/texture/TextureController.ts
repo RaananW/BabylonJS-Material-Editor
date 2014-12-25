@@ -1,9 +1,5 @@
 ﻿module RW.TextureEditor {
-
-    export interface TextureScope extends ng.IScope {
-        textures: Array<TextureDefinition>;
-    }
-
+    
     export class TextureController {
 
         public static $inject = [
@@ -15,7 +11,7 @@
         public textures;
 
         constructor(
-            private $scope: TextureScope,
+            private $scope: ng.IScope,
             private canvasService: CanvasService,
             private materialService:MaterialService
             ) {

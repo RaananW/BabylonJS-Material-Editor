@@ -1,5 +1,13 @@
 ﻿
-    module RW.TextureEditor {
+module RW.TextureEditor {
+
+    export interface CanvasScope extends ng.IScope {
+        lightConfigure: boolean;
+        light: BABYLON.Light;
+        lightSpecularColor: HexToBabylon;
+        lightDiffuseColor: HexToBabylon;
+    }
+
         export class CanvasController {
 
             public static $inject = [
@@ -8,31 +16,34 @@
                 'canvasService'
             ];
 
-            public objectTypes = [];
+            public objectTypes;
             public selectedObjectPosition;
 
-            public lightTypes = [];
+            public lightTypes;
             public selectedLightType;
 
             constructor(
-                private $scope: ng.IScope,
+                private $scope: CanvasScope,
                 private $timeout: ng.ITimeoutService,
                 private canvasService:CanvasService
                 ) {
 
-                var meshes = canvasService.getObjects();
-                for (var pos = 0; pos < meshes.length; pos++) {
-                    this.objectTypes.push({ name: meshes[pos].name, value: pos });
-                };
-
-                this.selectedObjectPosition = this.objectTypes[0];
-
                 this.lightTypes = [
-                    { name: 'Hemispheric' , type: LightType.HEMISPHERIC },
-                    //{ name: 'Spot', type: LightType.SPOT },
+                    { name: 'Hemispheric', type: LightType.HEMISPHERIC },
                     { name: 'Point (in camera position)', type: LightType.POINT }
                 ]
+
                 this.selectedLightType = this.lightTypes[0];
+
+                $scope.$on("sceneReset", () => {
+                    var meshes = canvasService.getObjects();
+                    this.objectTypes = [];
+                    for (var pos = 0; pos < meshes.length; pos++) {
+                        this.objectTypes.push({ name: meshes[pos].name, value: pos });
+                    };
+
+                    this.selectedObjectPosition = this.objectTypes[0];
+                });
 
                 $scope.$on("objectChanged", (event, object: BABYLON.AbstractMesh) => {
                     $timeout(() => {
@@ -43,24 +54,30 @@
                 });
 
                 $scope.$on("lightChanged", (event, light: BABYLON.Light) => {
-                    $scope['light'] = light;
-                    $scope['lightSpecularColor'] = new HexToBabylon('specular', light, "");
-                    $scope['lightDiffuseColor'] = new HexToBabylon('diffuse', light, "");
+                    this.resetLightParameters(light);
                 });
 
-                $scope['lightConfigure'] = true;
-
+                $scope.lightConfigure = true;
+                this.canvasService.resetScene();
                 this.canvasService.initLight();
-                
             }
 
-            public typeChanged() {
+            public resetLightParameters = (light: BABYLON.Light) => {
+                this.$scope.light = light;
+                this.$scope.lightSpecularColor = new HexToBabylon('specular', light, "");
+                this.$scope.lightDiffuseColor = new HexToBabylon('diffuse', light, "");
+            }
+
+            public lightTypeChanged() {
                 this.canvasService.initLight(this.selectedLightType.type);
-                //this.canvasService.initScene(new SceneInitImpl(this.selectedObjectType.type, this.selectedLightType.type, true));
             }
 
             public objectSelected() {
                 this.canvasService.selectObjectInPosition(this.selectedObjectPosition.value);
+            }
+
+            public resetScene() {
+                this.canvasService.resetScene();
             }
         }
     }

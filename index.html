@@ -265,7 +265,7 @@
                 <button class="btn btn-default alphaDiv" ng-click="lightConfigure = !lightConfigure">Configure Light</button>
                 <div collapse="lightConfigure">
                     <h4>Light Type</h4>
-                    <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.typeChanged()"></select>
+                    <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.lightTypeChanged()"></select>
                     <div class="row alphaDiv">
                         <div class="col-md-6">
                             <h4>Diffuse Color</h4>
@@ -290,6 +290,7 @@
                     </div>
                 </div>
                 <canvas class="alphaDiv" id="renderCanvas"></canvas>
+                <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset Scene</button>
             </div>
         </div>
     </div>

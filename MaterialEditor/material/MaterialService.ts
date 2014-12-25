@@ -8,7 +8,7 @@
         public materialSections: { [section: string]: MaterialDefinitionSection };
 
         constructor(private $rootScope: TextureEditorRootScope, private canvasService: CanvasService) {
-            this.initMaterialSections();
+            //this.initMaterialSections();
         }
 
         public initMaterialSections() {
