@@ -33,6 +33,7 @@ Roadmap / Future plans
 * Shaders
 * Supporting further types of textures (like mirror)
 * Support cube projection for reflections
+* Displacement maps
 
 Copyright (c) 2014 Raanan Weber (raananw@gmail.com)
 
