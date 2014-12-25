@@ -49,6 +49,7 @@
                             <label class="btn btn-primary" ng-model="material.backFaceCulling" btn-checkbox>Back Face Culling</label>
                             <label class="btn btn-primary" ng-model="material.useAlphaFromDiffuseTexture" btn-checkbox>Alpha From Diffuse Texture</label>
                             <label class="btn btn-primary" ng-model="material.useSpecularOverAlpha" btn-checkbox>Specular Over Alpha</label>
+                            <!--<label class="btn btn-primary" ng-click="materialController.toFlat()">To Flat</label>-->
                         </div>
                     </div>
                     <div class="col-md-12 alphaDiv">
@@ -249,7 +250,7 @@
                         <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
                     </div>       
                 </div>
-                <div class="row alphaDiv">
+                <!--<div class="row alphaDiv">
                     <div class="col-md-6">
                         <h4>Alpha</h4>
                     </div>
@@ -261,7 +262,7 @@
                                 precision="2">
                         </slider>
                     </div>
-                </div>
+                </div>-->
                 <button class="btn btn-default alphaDiv" ng-click="lightConfigure = !lightConfigure">Configure Light</button>
                 <div collapse="lightConfigure">
                     <h4>Light Type</h4>

@@ -30,11 +30,15 @@
             $scope.$on("objectChanged", this.afterObjectChanged);
         }
 
-        public afterObjectChanged = () => {
-            this.materialService.initMaterialSections();
-            this.$scope.material = this.canvasService.getMaterial();
+        public afterObjectChanged = (event:ng.IAngularEvent, object:BABYLON.AbstractMesh) => {
+            this.materialService.initMaterialSections(<BABYLON.StandardMaterial> object.material);
+            this.$scope.material = <BABYLON.StandardMaterial> object.material;
             this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
             this.$scope.materialSections = this.materialService.getMaterialSections();
+        }
+
+        public toFlat() {
+            //this.canva
         }
     }
 }

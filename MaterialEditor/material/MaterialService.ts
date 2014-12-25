@@ -11,15 +11,15 @@
             //this.initMaterialSections();
         }
 
-        public initMaterialSections() {
+        public initMaterialSections(material:BABYLON.StandardMaterial) {
             this.materialSections = {};
-            this.materialSections["diffuse"] = new MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
-            this.materialSections["emissive"] = new MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
-            this.materialSections["ambient"] = new MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
-            this.materialSections["opacity"] = new MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
-            this.materialSections["specular"] = new MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
-            this.materialSections["reflection"] = new MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
-            this.materialSections["bump"] = new MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
+            this.materialSections["diffuse"] = new MaterialDefinitionSection("diffuse", material, true, true, true);
+            this.materialSections["emissive"] = new MaterialDefinitionSection("emissive", material, true, true, true);
+            this.materialSections["ambient"] = new MaterialDefinitionSection("ambient", material, true, true, false);
+            this.materialSections["opacity"] = new MaterialDefinitionSection("opacity", material, false, true, true);
+            this.materialSections["specular"] = new MaterialDefinitionSection("specular", material, true, true, false);
+            this.materialSections["reflection"] = new MaterialDefinitionSection("reflection", material, false, true, true);
+            this.materialSections["bump"] = new MaterialDefinitionSection("bump", material, false, true, false);
         }
 
         public getMaterialSectionsArray() : string[] {

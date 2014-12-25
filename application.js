@@ -130,7 +130,7 @@ var RW;
                 this.$rootScope = $rootScope;
                 this._canvasElement = document.getElementById("renderCanvas");
                 this._engine = new BABYLON.Engine(this._canvasElement);
-                this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
+                this._scene = new BABYLON.Scene(this._engine);
 
                 this._camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 10, 0.8, 30, new BABYLON.Vector3(0, 0, 0), this._scene);
                 this._camera.wheelPrecision = 20;
@@ -148,16 +148,8 @@ var RW;
                 this._scene.registerBeforeRender(function () {
                 });
             }
-            CanvasService.prototype.getScene = function () {
-                return this.$rootScope.scene;
-            };
-
             CanvasService.prototype.getLight = function () {
                 return this._light;
-            };
-
-            CanvasService.prototype.getMaterial = function () {
-                return this.$rootScope.material;
             };
 
             CanvasService.prototype.updateTexture = function (property, texture) {
@@ -236,8 +228,9 @@ var RW;
             };
 
             CanvasService.prototype.selectObject = function (mesh) {
-                this.$rootScope.texturedObject = this._textureObject = mesh;
-                this.$rootScope.material = this._textureObject.material;
+                /*this.$rootScope.texturedObject = */ this._textureObject = mesh;
+
+                //this.$rootScope.material = <BABYLON.StandardMaterial> this._textureObject.material;
                 this.$rootScope.$broadcast("objectChanged", this._textureObject);
                 this.directCameraTo(this._textureObject);
             };
@@ -311,9 +304,9 @@ var RW;
                 this.$scope = $scope;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
-                this.afterObjectChanged = function () {
-                    _this.materialService.initMaterialSections();
-                    _this.$scope.material = _this.canvasService.getMaterial();
+                this.afterObjectChanged = function (event, object) {
+                    _this.materialService.initMaterialSections(object.material);
+                    _this.$scope.material = object.material;
                     _this.$scope.sectionNames = _this.materialService.getMaterialSectionsArray();
                     _this.$scope.materialSections = _this.materialService.getMaterialSections();
                 };
@@ -325,6 +318,9 @@ var RW;
 
                 $scope.$on("objectChanged", this.afterObjectChanged);
             }
+            MaterialController.prototype.toFlat = function () {
+                //this.canva
+            };
             MaterialController.$inject = [
                 '$scope',
                 'canvasService',
@@ -345,15 +341,15 @@ var RW;
                 this.canvasService = canvasService;
                 //this.initMaterialSections();
             }
-            MaterialService.prototype.initMaterialSections = function () {
+            MaterialService.prototype.initMaterialSections = function (material) {
                 this.materialSections = {};
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", this.$rootScope.material, true, true, true);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", this.$rootScope.material, true, true, true);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", this.$rootScope.material, true, true, false);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", this.$rootScope.material, false, true, true);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", this.$rootScope.material, true, true, false);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", this.$rootScope.material, false, true, true);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", this.$rootScope.material, false, true, false);
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", material, true, true, true);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", material, true, true, true);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", material, true, true, false);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", material, false, true, true);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", material, true, true, false);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", material, false, true, true);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", material, false, true, false);
             };
 
             MaterialService.prototype.getMaterialSectionsArray = function () {

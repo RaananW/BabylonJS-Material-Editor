@@ -15,7 +15,7 @@
         constructor(private $rootScope: TextureEditorRootScope) {
             this._canvasElement = <HTMLCanvasElement> document.getElementById("renderCanvas");
             this._engine = new BABYLON.Engine(this._canvasElement);
-            this._scene = this.$rootScope.scene = new BABYLON.Scene(this._engine);
+            this._scene = new BABYLON.Scene(this._engine);
 
             this._camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 10, 0.8, 30, new BABYLON.Vector3(0, 0, 0), this._scene);
             this._camera.wheelPrecision = 20;
@@ -36,19 +36,11 @@
             });
 
         }
-
-        public getScene(): BABYLON.Scene {
-            return this.$rootScope.scene;
-        }
-
+        
         public getLight(): BABYLON.Light {
             return this._light;
         }
-
-        public getMaterial(): BABYLON.StandardMaterial {
-            return this.$rootScope.material;
-        }
-
+        
         public updateTexture(property: string, texture: BABYLON.Texture) {
             this._textureObject.material[property] = texture;
         }
@@ -123,8 +115,8 @@
         }
          
         public selectObject(mesh: BABYLON.AbstractMesh) {
-            this.$rootScope.texturedObject = this._textureObject = mesh;
-            this.$rootScope.material = <BABYLON.StandardMaterial> this._textureObject.material;
+            /*this.$rootScope.texturedObject = */this._textureObject = mesh;
+            //this.$rootScope.material = <BABYLON.StandardMaterial> this._textureObject.material;
             this.$rootScope.$broadcast("objectChanged", this._textureObject);
             this.directCameraTo(this._textureObject);
         }
