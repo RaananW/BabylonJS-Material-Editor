@@ -260,13 +260,14 @@ var RW;
                     priority: 1,
                     link: function (scope, element, attrs, ngModel) {
                         var render = ngModel.$render;
+                        var addedText = attrs['extraText'] ? " " + attrs['extraText'] + " " : "";
                         function resetButton() {
                             if (ngModel.$modelValue === true || ngModel.$modelValue === 1) {
-                                element.html("Enabled");
+                                element.html(addedText + "Enabled");
                                 element.addClass('btn-success');
                                 element.removeClass('btn-danger');
                             } else {
-                                element.html("Disabled");
+                                element.html(addedText + "Disabled");
                                 element.addClass('btn-danger');
                                 element.removeClass('btn-success');
                             }
@@ -275,11 +276,11 @@ var RW;
 
                         element.bind('mouseenter', function () {
                             if (ngModel.$modelValue === true || ngModel.$modelValue === 1) {
-                                element.html("Disable");
+                                element.html("Disable" + addedText);
                                 element.addClass('btn-danger');
                                 element.removeClass('btn-success');
                             } else {
-                                element.html("Enable");
+                                element.html("Enable" + addedText);
                                 element.addClass('btn-success');
                                 element.removeClass('btn-danger');
                             }
@@ -305,7 +306,7 @@ var RW;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
                 this.afterObjectChanged = function (event, object) {
-                    _this.materialService.initMaterialSections(object.material);
+                    _this.materialService.initMaterialSections(object);
                     _this.$scope.material = object.material;
                     _this.$scope.sectionNames = _this.materialService.getMaterialSectionsArray();
                     _this.$scope.materialSections = _this.materialService.getMaterialSections();
@@ -318,9 +319,6 @@ var RW;
 
                 $scope.$on("objectChanged", this.afterObjectChanged);
             }
-            MaterialController.prototype.toFlat = function () {
-                //this.canva
-            };
             MaterialController.$inject = [
                 '$scope',
                 'canvasService',
@@ -341,15 +339,15 @@ var RW;
                 this.canvasService = canvasService;
                 //this.initMaterialSections();
             }
-            MaterialService.prototype.initMaterialSections = function (material) {
+            MaterialService.prototype.initMaterialSections = function (object) {
                 this.materialSections = {};
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", material, true, true, true);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", material, true, true, true);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", material, true, true, false);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", material, false, true, true);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", material, true, true, false);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", material, false, true, true);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", material, false, true, false);
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", object, false, true, true);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", object, true, true, false);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", object, false, true, true);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", object, false, true, false);
             };
 
             MaterialService.prototype.getMaterialSectionsArray = function () {
@@ -449,20 +447,20 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var MaterialDefinitionSection = (function () {
-            function MaterialDefinitionSection(name, _material, hasColor, hasTexture, hasFrensel) {
+            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFrensel) {
                 this.name = name;
-                this._material = _material;
+                this._object = _object;
                 this.hasColor = hasColor;
                 this.hasTexture = hasTexture;
                 this.hasFrensel = hasFrensel;
                 if (hasColor) {
-                    this.color = new TextureEditor.HexToBabylon(name, _material);
+                    this.color = new TextureEditor.HexToBabylon(name, _object.material);
                 }
                 if (hasTexture) {
-                    this.texture = new TextureEditor.TextureDefinition(name, _material);
+                    this.texture = new TextureEditor.TextureDefinition(name, _object.material, _object);
                 }
                 if (hasFrensel) {
-                    this.frensel = new TextureEditor.FrenselDefinition(name, _material);
+                    this.frensel = new TextureEditor.FrenselDefinition(name, _object.material);
                 }
             }
             return MaterialDefinitionSection;
@@ -582,10 +580,11 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var TextureDefinition = (function () {
-            function TextureDefinition(name, _material) {
+            function TextureDefinition(name, _material, _connectedMesh) {
                 var _this = this;
                 this.name = name;
                 this._material = _material;
+                this._connectedMesh = _connectedMesh;
                 //TODO implement video support etc'. At the moment only dynamic is supported.
                 /*public setBabylonTextureType(type: BabylonTextureType) {
                 this.babylonTextureType = type;
@@ -601,9 +600,19 @@ var RW;
                 this.canvasId = this.name + "Canvas";
                 this.numberOfImages = 1;
                 if (this._material[this.propertyInMaterial]) {
+                    if (this._material[this.propertyInMaterial] instanceof BABYLON.MirrorTexture) {
+                        this.babylonTextureType = 4 /* MIRROR */;
+                    } else if (this._material[this.propertyInMaterial] instanceof BABYLON.VideoTexture) {
+                        this.babylonTextureType = 4 /* MIRROR */;
+                    } else if (this._material[this.propertyInMaterial] instanceof BABYLON.CubeTexture) {
+                        this.babylonTextureType = 3 /* CUBE */;
+                    } else {
+                        this.babylonTextureType = 1 /* NORMAL */;
+                    }
                     this.enabled(true);
                     this.initFromMaterial();
                 } else {
+                    this.babylonTextureType = 1 /* NORMAL */;
                     this.enabled(false);
                     this.init = false;
 
@@ -633,10 +642,7 @@ var RW;
             };
 
             TextureDefinition.prototype.initFromMaterial = function () {
-                //update canvas
                 this.textureVariable = this._material[this.propertyInMaterial];
-
-                //TODO since deleteBuffer = false, material[texture]._buffer is the base64 image. Update the canvas with it!
                 this.init = true;
             };
 
@@ -653,6 +659,40 @@ var RW;
                 }
             };
 
+            TextureDefinition.prototype.mirrorEnabled = function (enabled) {
+                if (angular.isDefined(enabled)) {
+                    if (enabled) {
+                        if (this.name != "reflection") {
+                            throw new Error("wrong texture for mirror! Should be reflection!");
+                        }
+                        this.babylonTextureType = 4 /* MIRROR */;
+
+                        //create the mirror
+                        this.textureVariable = new BABYLON.MirrorTexture("mirrorTex", 512, this._material.getScene());
+                        this.textureVariable['renderList'] = this._material.getScene().meshes;
+
+                        //calculate plane
+                        var pointsArray = [];
+                        var meshWorldMatrix = this._connectedMesh.computeWorldMatrix();
+                        var verticesPos = this._connectedMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+                        for (var i = 0; i < 3; i++) {
+                            pointsArray.push(BABYLON.Vector3.TransformCoordinates(BABYLON.Vector3.FromArray(verticesPos, i * 3), meshWorldMatrix));
+                        }
+                        this.textureVariable['mirrorPlane'] = BABYLON.Plane.FromPoints(pointsArray[0], pointsArray[1], pointsArray[2]);
+                        this.init = true;
+                        if (!this._isEnabled) {
+                            this.enabled(true);
+                        }
+                    } else {
+                        this.babylonTextureType = 1 /* NORMAL */;
+                        this._material[this.propertyInMaterial] = null;
+                        this.init = false;
+                    }
+                } else {
+                    return this._isEnabled && this.babylonTextureType == 4 /* MIRROR */;
+                }
+            };
+
             TextureDefinition.prototype.enabled = function (enabled) {
                 if (angular.isDefined(enabled)) {
                     if (enabled) {
@@ -660,14 +700,11 @@ var RW;
                             this._material[this.propertyInMaterial] = this.textureVariable;
                         this._isEnabled = true;
                     } else {
-                        if (this._material[this.propertyInMaterial]) {
-                            //this._material[this.propertyInMaterial].dispose();
-                            this._material[this.propertyInMaterial] = null;
-                        }
+                        this._material[this.propertyInMaterial] = null;
                         this._isEnabled = false;
                     }
                 } else {
-                    return this._isEnabled ? 1 : 0;
+                    return this._isEnabled;
                 }
             };
 
@@ -691,6 +728,7 @@ var RW;
             BabylonTextureType[BabylonTextureType["NORMAL"] = 1] = "NORMAL";
             BabylonTextureType[BabylonTextureType["VIDEO"] = 2] = "VIDEO";
             BabylonTextureType[BabylonTextureType["CUBE"] = 3] = "CUBE";
+            BabylonTextureType[BabylonTextureType["MIRROR"] = 4] = "MIRROR";
         })(TextureEditor.BabylonTextureType || (TextureEditor.BabylonTextureType = {}));
         var BabylonTextureType = TextureEditor.BabylonTextureType;
 

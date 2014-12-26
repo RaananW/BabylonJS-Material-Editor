@@ -7,7 +7,7 @@
 
         public frenselVariable: BABYLON.FresnelParameters;
 
-        constructor(name: string, _material: BABYLON.StandardMaterial) {
+        constructor(name: string, _material: BABYLON.Material) {
             this._propertyInMaterial = name + 'FresnelParameters';
             if (_material[this._propertyInMaterial]) {
                 this.frenselVariable = _material[this._propertyInMaterial];

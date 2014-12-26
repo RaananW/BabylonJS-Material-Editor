@@ -140,13 +140,15 @@
                                             <h4>Texture</h4>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="1" btn-checkbox-false="0">
-                                            </button>
+                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false">
+                                            </button> 
+                                            <button type="button" class="btn" ng-show="section=='reflection'" disable-enable-button extra-text="Mirror" ng-model="materialSections[section].texture.mirrorEnabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false"></button>
                                         </div>
                                         <div class="col-md-12" ng-show="materialSections[section].texture._isEnabled">
                                             <div class="row">
                                                 <div class="col-md-4">
-                                                    <texture-image tex="materialSections[section].texture" on-update-texture="updateTexture($name)"></texture-image>
+                                                    <texture-image tex="materialSections[section].texture" ng-show="materialSections[section].texture.babylonTextureType === 1" on-update-texture="updateTexture($name)"></texture-image>
+
                                                 </div>
                                                 <div class="col-md-8" ng-show="materialSections[section].texture.init">
                                                     <div class="col-md-12" ng-show="section=='reflection'">

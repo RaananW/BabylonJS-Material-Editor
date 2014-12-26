@@ -4,7 +4,8 @@
         DYNAMIC,
         NORMAL,
         VIDEO,
-        CUBE
+        CUBE,
+        MIRROR
     }
 
     export enum CoordinatesMode {

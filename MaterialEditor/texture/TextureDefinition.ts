@@ -1,23 +1,36 @@
-﻿module RW.TextureEditor {
+﻿
+module RW.TextureEditor {
     export class TextureDefinition {
 
         private _isEnabled: boolean;
         public init: boolean;
         public numberOfImages: number;
-        //public babylonTextureType: BabylonTextureType;
+        public babylonTextureType: BabylonTextureType;
         public propertyInMaterial: string;
         public canvasId: string;
 
+        private _isMirror: boolean;
+
         public textureVariable: BABYLON.Texture;
 
-        constructor(public name: string, private _material: BABYLON.StandardMaterial) {
+        constructor(public name: string, private _material: BABYLON.Material, private _connectedMesh : BABYLON.AbstractMesh) {
             this.propertyInMaterial = this.name.toLowerCase() + "Texture";
             this.canvasId = this.name + "Canvas";
             this.numberOfImages = 1;
             if (this._material[this.propertyInMaterial]) {
+                if (this._material[this.propertyInMaterial] instanceof BABYLON.MirrorTexture) {
+                    this.babylonTextureType = BabylonTextureType.MIRROR;
+                } else if (this._material[this.propertyInMaterial] instanceof BABYLON.VideoTexture) {
+                    this.babylonTextureType = BabylonTextureType.MIRROR;
+                } else if (this._material[this.propertyInMaterial] instanceof BABYLON.CubeTexture) {
+                    this.babylonTextureType = BabylonTextureType.CUBE;
+                } else {
+                    this.babylonTextureType = BabylonTextureType.NORMAL;
+                }
                 this.enabled(true);
                 this.initFromMaterial();
             } else {
+                this.babylonTextureType = BabylonTextureType.NORMAL;
                 this.enabled(false);
                 this.init = false;
                 //clean canvas
@@ -46,9 +59,7 @@
         }
 
         private initFromMaterial() {
-            //update canvas
-            this.textureVariable = this._material[this.propertyInMaterial]
-            //TODO since deleteBuffer = false, material[texture]._buffer is the base64 image. Update the canvas with it!
+            this.textureVariable = this._material[this.propertyInMaterial];
             this.init = true;
         }
 
@@ -65,6 +76,38 @@
             }
         }
 
+        public mirrorEnabled(enabled: boolean) {
+            if (angular.isDefined(enabled)) {
+                if (enabled) {
+                    if (this.name != "reflection") {
+                        throw new Error("wrong texture for mirror! Should be reflection!");
+                    }
+                    this.babylonTextureType = BabylonTextureType.MIRROR;
+                    //create the mirror
+                    this.textureVariable = new BABYLON.MirrorTexture("mirrorTex", 512, this._material.getScene());
+                    this.textureVariable['renderList'] = this._material.getScene().meshes;
+                    //calculate plane
+                    var pointsArray: Array<BABYLON.Vector3> = [];
+                    var meshWorldMatrix = this._connectedMesh.computeWorldMatrix();
+                    var verticesPos = this._connectedMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+                    for (var i = 0; i < 3; i++) {
+                        pointsArray.push(BABYLON.Vector3.TransformCoordinates(BABYLON.Vector3.FromArray(verticesPos, i * 3), meshWorldMatrix));
+                    }
+                    this.textureVariable['mirrorPlane'] = BABYLON.Plane.FromPoints(pointsArray[0], pointsArray[1], pointsArray[2]);
+                    this.init = true;
+                    if (!this._isEnabled) {
+                        this.enabled(true);
+                    }
+                } else {
+                    this.babylonTextureType = BabylonTextureType.NORMAL;
+                    this._material[this.propertyInMaterial] = null;
+                    this.init = false;
+                }
+            } else {
+                return this._isEnabled && this.babylonTextureType == BabylonTextureType.MIRROR;
+            }
+        }
+
         public enabled(enabled: boolean) {
             if (angular.isDefined(enabled)) {
                 if (enabled) {
@@ -72,15 +115,12 @@
                         this._material[this.propertyInMaterial] = this.textureVariable;
                     this._isEnabled = true;
                 } else {
-                    if (this._material[this.propertyInMaterial]) {
-                        //this._material[this.propertyInMaterial].dispose();
-                        this._material[this.propertyInMaterial] = null;
-                    }
+                    this._material[this.propertyInMaterial] = null;
                     this._isEnabled = false;
                 }
 
             } else {
-                return this._isEnabled ? 1 : 0;
+                return this._isEnabled;
             }
         }
 

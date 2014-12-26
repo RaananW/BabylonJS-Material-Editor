@@ -5,6 +5,7 @@
         sectionNames: string[];
         materialSections: { [section: string]: MaterialDefinitionSection };
         updateTexture(type): void;
+        mirrorEnabled: boolean;
     }
         
     export class MaterialController {
@@ -31,14 +32,10 @@
         }
 
         public afterObjectChanged = (event:ng.IAngularEvent, object:BABYLON.AbstractMesh) => {
-            this.materialService.initMaterialSections(<BABYLON.StandardMaterial> object.material);
+            this.materialService.initMaterialSections(object);
             this.$scope.material = <BABYLON.StandardMaterial> object.material;
             this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
             this.$scope.materialSections = this.materialService.getMaterialSections();
-        }
-
-        public toFlat() {
-            //this.canva
         }
     }
 }
