@@ -108,7 +108,7 @@ module RW.TextureEditor {
             }
         }
 
-        public enabled(enabled: boolean) {
+        public enabled(enabled?: boolean) {
             if (angular.isDefined(enabled)) {
                 if (enabled) {
                     if (this.textureVariable)
@@ -139,6 +139,31 @@ module RW.TextureEditor {
                 this.coordinatesMode(CoordinatesMode.CUBIC);
             }
         }*/
+
+        public exportAsJavascript(sceneVarName:string, materialVarName:string) : string {
+            var strings: Array<string> = [];
+            var varName = materialVarName + "_" + this.name + "Texture";
+
+            //init the variable
+            if (this.babylonTextureType == BabylonTextureType.MIRROR) {
+                strings.push("var " + varName + " = new BABYLON.MirrorTexture('MirrorTexture', 512," + sceneVarName + " )");
+                var plane: BABYLON.Plane = this.textureVariable['mirrorPlane'];
+                var array = plane.asArray();
+                strings.push(varName + ".mirrorPlane = new BABYLON.Plane(" + array[0] + "," + array[1] + "," + array[2] + "," + array[3] + ")");
+                strings.push("// Change the render list to fit your needs. The scene's meshes is being used per default");
+                strings.push(varName + ".renderList = " + sceneVarName + ".meshes");
+            } else {
+                var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
+                strings.push("var " + varName + " = new BABYLON.Texture('"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");
+            }
+            //uvw stuff
+            ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAngle", "vAngle", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
+                strings.push(varName + "." + param + " = " + this.textureVariable[param]);
+            });
+            strings.push("");
+            strings.push(materialVarName + "."+this.propertyInMaterial+ " = " + varName);
+            return strings.join(";\n");
+        }
 
         //for ng-repeat
         public getCanvasNumber = () => {

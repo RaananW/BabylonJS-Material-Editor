@@ -14,7 +14,7 @@
                         'ui.bootstrap',
                         'colorpicker.module',
                         'ui.slider'
-                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage).directive("disableEnableButton", TextureEditor.disableEnableButton);
+                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("MaterialExportModalController", TextureEditor.MaterialExportModlController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage).directive("disableEnableButton", TextureEditor.disableEnableButton);
 
                     angular.bootstrap(document, [_this.app.name]);
                 });
@@ -300,9 +300,10 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var MaterialController = (function () {
-            function MaterialController($scope, canvasService, materialService) {
+            function MaterialController($scope, $modal /* modal from angular bootstrap ui */ , canvasService, materialService) {
                 var _this = this;
                 this.$scope = $scope;
+                this.$modal = $modal;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
                 this.afterObjectChanged = function (event, object) {
@@ -319,14 +320,77 @@ var RW;
 
                 $scope.$on("objectChanged", this.afterObjectChanged);
             }
+            MaterialController.prototype.exportMaterial = function () {
+                var _this = this;
+                var modalInstance = this.$modal.open({
+                    templateUrl: 'materialExport.html',
+                    controller: 'MaterialExportModalController',
+                    size: "lg",
+                    resolve: {
+                        materialDefinitions: function () {
+                            return _this.$scope.materialSections;
+                        }
+                    }
+                });
+            };
             MaterialController.$inject = [
                 '$scope',
+                '$modal',
                 'canvasService',
                 'materialService'
             ];
             return MaterialController;
         })();
         TextureEditor.MaterialController = MaterialController;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var MaterialExportModlController = (function () {
+            function MaterialExportModlController($scope, $modalInstance, materialDefinitions) {
+                var _this = this;
+                this.$scope = $scope;
+                this.$modalInstance = $modalInstance;
+                this.materialDefinitions = materialDefinitions;
+                $scope.materialName = "my awsome material";
+                $scope.materialVariableName = "myAwsomeMaterial";
+                $scope.sceneVariableName = "myWonderfulScene";
+                console.log($scope, $modalInstance, materialDefinitions);
+
+                $scope.close = function () {
+                    $modalInstance.close();
+                };
+
+                $scope.updateExport = function () {
+                    var strings = [];
+                    strings.push("//Material generated using the babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
+                    strings.push("\n");
+                    strings.push("var " + _this.$scope.materialVariableName + " = new BABYLON.StandardMaterial('" + _this.$scope.materialName + "', " + _this.$scope.sceneVariableName + ")");
+                    strings.push("\n");
+
+                    var exports = [];
+
+                    exports.push(strings.join(";\n"));
+
+                    Object.keys(_this.materialDefinitions).forEach(function (definition) {
+                        exports.push(_this.materialDefinitions[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
+                    });
+
+                    _this.$scope.materialExport = exports.join(";\n").split("\n;\n").join("\n");
+                };
+
+                $scope.updateExport();
+            }
+            MaterialExportModlController.$inject = [
+                '$scope',
+                '$modalInstance',
+                'materialDefinitions'
+            ];
+            return MaterialExportModlController;
+        })();
+        TextureEditor.MaterialExportModlController = MaterialExportModlController;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -372,6 +436,7 @@ var RW;
     (function (TextureEditor) {
         var FrenselDefinition = (function () {
             function FrenselDefinition(name, _material) {
+                this.name = name;
                 this._propertyInMaterial = name + 'FresnelParameters';
                 if (_material[this._propertyInMaterial]) {
                     this.frenselVariable = _material[this._propertyInMaterial];
@@ -382,6 +447,21 @@ var RW;
                 }
                 this.leftColor = new TextureEditor.HexToBabylon("left", _material[this._propertyInMaterial]), this.rightColor = new TextureEditor.HexToBabylon("right", _material[this._propertyInMaterial]);
             }
+            FrenselDefinition.prototype.exportAsJavascript = function (materialVarName) {
+                var strings = [];
+                var varName = materialVarName + "_" + this.name + "Fresnel";
+                strings.push("var " + varName + " = new BABYLON.FresnelParameters()");
+                strings.push(varName + ".isEnabled = true");
+                strings.push(varName + ".bias = " + this.frenselVariable.bias);
+                strings.push(varName + ".power = " + this.frenselVariable.power);
+                var colorArray = this.frenselVariable.leftColor.asArray();
+                strings.push(varName + "." + "leftColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
+                colorArray = this.frenselVariable.rightColor.asArray();
+                strings.push(varName + "." + "rightColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
+                strings.push(materialVarName + "." + this._propertyInMaterial + " = " + varName);
+
+                return strings.join(";\n");
+            };
             return FrenselDefinition;
         })();
         TextureEditor.FrenselDefinition = FrenselDefinition;
@@ -463,6 +543,30 @@ var RW;
                     this.frensel = new TextureEditor.FrenselDefinition(name, _object.material);
                 }
             }
+            MaterialDefinitionSection.prototype.exportToJavascript = function (sceneVarName, materialName, materialVarName) {
+                var strings = [];
+
+                if (this.hasColor) {
+                    var colorArray = this.color.babylonColor.asArray();
+                    strings.push(materialVarName + "." + this.color.propertyName + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
+                }
+                if (this.hasFrensel && this.frensel.frenselVariable.isEnabled) {
+                    strings.push("//Frensel Parameters ");
+                    strings.push(this.frensel.exportAsJavascript(materialVarName));
+                }
+                if (this.hasTexture && this.texture.enabled()) {
+                    strings.push("//Texture Parameters ");
+                    strings.push(this.texture.exportAsJavascript(sceneVarName, materialVarName));
+                }
+
+                if (strings.length != 0) {
+                    strings.unshift("\n");
+                    strings.unshift("// " + this.name + " definitions");
+                    strings.unshift("\n");
+                }
+
+                return strings.join(";\n");
+            };
             return MaterialDefinitionSection;
         })();
         TextureEditor.MaterialDefinitionSection = MaterialDefinitionSection;
@@ -585,13 +689,6 @@ var RW;
                 this.name = name;
                 this._material = _material;
                 this._connectedMesh = _connectedMesh;
-                //TODO implement video support etc'. At the moment only dynamic is supported.
-                /*public setBabylonTextureType(type: BabylonTextureType) {
-                this.babylonTextureType = type;
-                if (type === BabylonTextureType.CUBE) {
-                this.coordinatesMode(CoordinatesMode.CUBIC);
-                }
-                }*/
                 //for ng-repeat
                 this.getCanvasNumber = function () {
                     return new Array(_this.numberOfImages);
@@ -713,6 +810,40 @@ var RW;
                 if (this._isEnabled) {
                     this._material[this.propertyInMaterial] = this.textureVariable;
                 }
+            };
+
+            //TODO implement video support etc'. At the moment only dynamic is supported.
+            /*public setBabylonTextureType(type: BabylonTextureType) {
+            this.babylonTextureType = type;
+            if (type === BabylonTextureType.CUBE) {
+            this.coordinatesMode(CoordinatesMode.CUBIC);
+            }
+            }*/
+            TextureDefinition.prototype.exportAsJavascript = function (sceneVarName, materialVarName) {
+                var _this = this;
+                var strings = [];
+                var varName = materialVarName + "_" + this.name + "Texture";
+
+                //init the variable
+                if (this.babylonTextureType == 4 /* MIRROR */) {
+                    strings.push("var " + varName + " = new BABYLON.MirrorTexture('MirrorTexture', 512," + sceneVarName + " )");
+                    var plane = this.textureVariable['mirrorPlane'];
+                    var array = plane.asArray();
+                    strings.push(varName + ".mirrorPlane = new BABYLON.Plane(" + array[0] + "," + array[1] + "," + array[2] + "," + array[3] + ")");
+                    strings.push("// Change the render list to fit your needs. The scene's meshes is being used per default");
+                    strings.push(varName + ".renderList = " + sceneVarName + ".meshes");
+                } else {
+                    var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
+                    strings.push("var " + varName + " = new BABYLON.Texture('" + materialVarName + "_" + this.name + extension + "', " + sceneVarName + ")");
+                }
+
+                //uvw stuff
+                ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAngle", "vAngle", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach(function (param) {
+                    strings.push(varName + "." + param + " = " + _this.textureVariable[param]);
+                });
+                strings.push("");
+                strings.push(materialVarName + "." + this.propertyInMaterial + " = " + varName);
+                return strings.join(";\n");
             };
             return TextureDefinition;
         })();

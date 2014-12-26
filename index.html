@@ -241,6 +241,39 @@
                             </tab>
                         </tabset>
                     </div>
+                    <script type="text/ng-template" id="materialExport.html">
+                        <div class="modal-header">
+                            <h3 class="modal-title">MaterialExport</h3>
+                        </div>
+                        <div class="modal-body">
+                            <form class="form-horizontal" role="form">
+                                <div class="form-group">
+                                    <label class="col-sm-6">Scene variable name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="uScale" ng-model="sceneVariableName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Material variable name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="vScale" ng-model="materialVariableName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Material name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="uOffset" ng-model="materialName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                            </form>
+                            <textarea ng-model="materialExport" style="width:100%; height:500px;">{{materialExport}}</textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" ng-click="close()">Close</button>
+                        </div>
+                    </script>
+
+                    <button class="alphaDiv btn btn-default" ng-click="materialController.exportMaterial()">Export Material</button>
                 </div>
             </div>
             <div class="col-md-4" ng-controller="CanvasController as canvasController">

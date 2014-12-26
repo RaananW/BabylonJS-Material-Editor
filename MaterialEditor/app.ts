@@ -19,6 +19,7 @@ module RW.TextureEditor {
                 ])
                     .controller("CanvasController", CanvasController)
                     .controller("MaterialController", MaterialController)
+                    .controller("MaterialExportModalController", MaterialExportModlController)
                     .controller("TextureController", TextureController)
                     .service("materialService", MaterialService)
                     .service("canvasService", CanvasService)
