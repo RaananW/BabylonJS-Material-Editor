@@ -434,37 +434,37 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        var FrenselDefinition = (function () {
-            function FrenselDefinition(name, _material) {
+        var FresnelDefinition = (function () {
+            function FresnelDefinition(name, _material) {
                 this.name = name;
                 this._propertyInMaterial = name + 'FresnelParameters';
                 if (_material[this._propertyInMaterial]) {
-                    this.frenselVariable = _material[this._propertyInMaterial];
+                    this.fresnelVariable = _material[this._propertyInMaterial];
                 } else {
-                    this.frenselVariable = new BABYLON.FresnelParameters();
-                    this.frenselVariable.isEnabled = false;
-                    _material[this._propertyInMaterial] = this.frenselVariable;
+                    this.fresnelVariable = new BABYLON.FresnelParameters();
+                    this.fresnelVariable.isEnabled = false;
+                    _material[this._propertyInMaterial] = this.fresnelVariable;
                 }
                 this.leftColor = new TextureEditor.HexToBabylon("left", _material[this._propertyInMaterial]), this.rightColor = new TextureEditor.HexToBabylon("right", _material[this._propertyInMaterial]);
             }
-            FrenselDefinition.prototype.exportAsJavascript = function (materialVarName) {
+            FresnelDefinition.prototype.exportAsJavascript = function (materialVarName) {
                 var strings = [];
                 var varName = materialVarName + "_" + this.name + "Fresnel";
                 strings.push("var " + varName + " = new BABYLON.FresnelParameters()");
                 strings.push(varName + ".isEnabled = true");
-                strings.push(varName + ".bias = " + this.frenselVariable.bias);
-                strings.push(varName + ".power = " + this.frenselVariable.power);
-                var colorArray = this.frenselVariable.leftColor.asArray();
+                strings.push(varName + ".bias = " + this.fresnelVariable.bias);
+                strings.push(varName + ".power = " + this.fresnelVariable.power);
+                var colorArray = this.fresnelVariable.leftColor.asArray();
                 strings.push(varName + "." + "leftColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
-                colorArray = this.frenselVariable.rightColor.asArray();
+                colorArray = this.fresnelVariable.rightColor.asArray();
                 strings.push(varName + "." + "rightColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
                 strings.push(materialVarName + "." + this._propertyInMaterial + " = " + varName);
 
                 return strings.join(";\n");
             };
-            return FrenselDefinition;
+            return FresnelDefinition;
         })();
-        TextureEditor.FrenselDefinition = FrenselDefinition;
+        TextureEditor.FresnelDefinition = FresnelDefinition;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -527,20 +527,20 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var MaterialDefinitionSection = (function () {
-            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFrensel) {
+            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFresnel) {
                 this.name = name;
                 this._object = _object;
                 this.hasColor = hasColor;
                 this.hasTexture = hasTexture;
-                this.hasFrensel = hasFrensel;
+                this.hasFresnel = hasFresnel;
                 if (hasColor) {
                     this.color = new TextureEditor.HexToBabylon(name, _object.material);
                 }
                 if (hasTexture) {
                     this.texture = new TextureEditor.TextureDefinition(name, _object.material, _object);
                 }
-                if (hasFrensel) {
-                    this.frensel = new TextureEditor.FrenselDefinition(name, _object.material);
+                if (hasFresnel) {
+                    this.fresnel = new TextureEditor.FresnelDefinition(name, _object.material);
                 }
             }
             MaterialDefinitionSection.prototype.exportToJavascript = function (sceneVarName, materialName, materialVarName) {
@@ -550,9 +550,9 @@ var RW;
                     var colorArray = this.color.babylonColor.asArray();
                     strings.push(materialVarName + "." + this.color.propertyName + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
                 }
-                if (this.hasFrensel && this.frensel.frenselVariable.isEnabled) {
-                    strings.push("//Frensel Parameters ");
-                    strings.push(this.frensel.exportAsJavascript(materialVarName));
+                if (this.hasFresnel && this.fresnel.fresnelVariable.isEnabled) {
+                    strings.push("//Fresnel Parameters ");
+                    strings.push(this.fresnel.exportAsJavascript(materialVarName));
                 }
                 if (this.hasTexture && this.texture.enabled()) {
                     strings.push("//Texture Parameters ");
