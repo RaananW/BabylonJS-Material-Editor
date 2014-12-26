@@ -148,10 +148,10 @@
                                             <div class="row">
                                                 <div class="col-md-4">
                                                     <texture-image tex="materialSections[section].texture" ng-show="materialSections[section].texture.babylonTextureType === 1" on-update-texture="updateTexture($name)"></texture-image>
-
                                                 </div>
                                                 <div class="col-md-8" ng-show="materialSections[section].texture.init">
                                                     <div class="col-md-12" ng-show="section=='reflection'">
+                                                        <div class="alert alert-warning" role="alert" ng-show="materialSections[section].texture.babylonTextureType === 4">Mirror works best with planes. Will not works correctly with all others.</div>
                                                         <h4>Coordinates Mode</h4>
                                                         <div class="btn-group" role="group" aria-label="...">
                                                             <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="0" class="btn btn-default">Explicit</button>
