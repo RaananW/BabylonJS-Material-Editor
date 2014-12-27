@@ -5,14 +5,9 @@
     min-height: 500px;
   }
 
-.texture-well {
-    height: 138px;
-    width: 138px;
-}
-
 .texture-canvas {
-    height: 128px;
-    width: 128px;
+    min-height: 50px;
+    width: 100%;
 }
 html {
   position: relative;

@@ -16,10 +16,9 @@
             link: function (scope, element, attr) {
                 var texture = <TextureDefinition> scope.tex;
 
-                function render(src, canvasId: string, onSuccess) {
+                function render(src, canvas: HTMLCanvasElement, onSuccess) {
                     var image = new Image();
                     image.onload = function () {
-                        var canvas = <HTMLCanvasElement> document.getElementById(canvasId);
                         var ctx = canvas.getContext("2d");
                         //todo use canvas.style.height and width to keep aspect ratio
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -44,7 +43,7 @@
                     image.src = src;
                 }
 
-                function loadImage(src, canvasId: string) {
+                function loadImage(src, canvas: HTMLCanvasElement) {
                     //	Prevent any non-image file type from being read.
                     if (!src.type.match(/image.*/)) {
                         console.log("The dropped file is not an image: ", src.type);
@@ -54,7 +53,7 @@
                     //	Create our FileReader and run the results through the render function.
                     var reader = new FileReader();
                     reader.onload = (e) => {
-                        render(e.target.result, canvasId, function () {
+                        render(e.target.result, canvas, function () {
                             if (scope.updateTexture) {
                                 scope.updateTexture({ $name: texture.name });
                             }
@@ -62,20 +61,21 @@
                     };
                     reader.readAsDataURL(src);
                 }
-                for (var i = 0; i < texture.numberOfImages; i++) {
-                    var canvasId = (texture.canvasId + "-" + i);
+                //preparing for 6 images.
+                //for (var i = 0; i < 6; i++) {
 
+                    //var pos = i;
                     element.on("dragover", ".texture-canvas-drop", function (e) {
                         e.preventDefault();
                     });
                     element.on("dragleave", ".texture-canvas-drop", function (e) {
                         e.preventDefault();
                     });
-                    element.on("drop", ".texture-canvas-drop", function (e:any) {
+                    element.on("drop", ".texture-canvas-drop", function (e) {
                         e.preventDefault();
-                        loadImage(e.originalEvent.dataTransfer.files[0], canvasId);
+                        loadImage(e.originalEvent.dataTransfer.files[0], <HTMLCanvasElement> $(this).find("canvas")[0]);
                     });
-                }
+                //}
                 
             }
         }

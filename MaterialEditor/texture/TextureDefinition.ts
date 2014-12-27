@@ -11,7 +11,7 @@ module RW.TextureEditor {
 
         private _isMirror: boolean;
 
-        public textureVariable: BABYLON.Texture;
+        public textureVariable: BABYLON.BaseTexture;
 
         constructor(public name: string, private _material: BABYLON.Material, private _connectedMesh : BABYLON.AbstractMesh) {
             this.propertyInMaterial = this.name.toLowerCase() + "Texture";
@@ -46,16 +46,28 @@ module RW.TextureEditor {
             if (this.textureVariable) {
                 this.textureVariable.dispose();
             }
-            var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
-            var base64 = canvasElement.toDataURL();
-            this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
-            if (this.name != "reflection") {
-                this.coordinatesMode(CoordinatesMode.EXPLICIT);
+            
+            if (this.numberOfImages == 1) {
+                var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
+                var base64 = canvasElement.toDataURL();
+                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
+                if (this.name != "reflection") {
+                    this.coordinatesMode(CoordinatesMode.EXPLICIT);
+                } else {
+                    this.coordinatesMode(CoordinatesMode.PLANAR);
+                }
+                this.babylonTextureType = BabylonTextureType.NORMAL;
+                this.init = true;
             } else {
-                this.coordinatesMode(CoordinatesMode.PLANAR);
+                var urls = [];
+                for (var i = 0; i < 6; i++) {
+                    var canvasElement = <HTMLCanvasElement> document.getElementById(this.canvasId + "-"+i);
+                    urls.push(canvasElement.toDataURL());
+                }
+                this.textureVariable = new BABYLON.ExtendedCubeTexture(urls, this._material.getScene(), false);
+                this.babylonTextureType = BabylonTextureType.CUBE;
+                this.init = true;
             }
-            //this.babylonTextureType = BabylonTextureType.NORMAL;
-            this.init = true;
         }
 
         private initFromMaterial() {
@@ -65,11 +77,16 @@ module RW.TextureEditor {
 
         public coordinatesMode(mode: CoordinatesMode) {
             if (angular.isDefined(mode)) {
+                
+                var shouldInit: boolean = mode != CoordinatesMode.CUBIC && this.numberOfImages == 6;
                 this.textureVariable.coordinatesMode = mode;
                 if (mode === CoordinatesMode.CUBIC) {
                     this.numberOfImages = 6;
                 } else {
                     this.numberOfImages = 1;
+                }
+                if (shouldInit) {
+                    //this.initTexture();
                 }
             } else {
                 return this.textureVariable ? this.textureVariable.coordinatesMode : 0;
@@ -95,13 +112,14 @@ module RW.TextureEditor {
                     }
                     this.textureVariable['mirrorPlane'] = BABYLON.Plane.FromPoints(pointsArray[0], pointsArray[1], pointsArray[2]);
                     this.init = true;
-                    if (!this._isEnabled) {
+                    //if (!this._isEnabled) {
                         this.enabled(true);
-                    }
+                    //}
                 } else {
                     this.babylonTextureType = BabylonTextureType.NORMAL;
                     this._material[this.propertyInMaterial] = null;
                     this.init = false;
+                    this.initTexture();
                 }
             } else {
                 return this._isEnabled && this.babylonTextureType == BabylonTextureType.MIRROR;
@@ -111,6 +129,9 @@ module RW.TextureEditor {
         public enabled(enabled?: boolean) {
             if (angular.isDefined(enabled)) {
                 if (enabled) {
+                    if (!this.init) {
+                        this.initTexture();
+                    }
                     if (this.textureVariable)
                         this._material[this.propertyInMaterial] = this.textureVariable;
                     this._isEnabled = true;
@@ -118,7 +139,6 @@ module RW.TextureEditor {
                     this._material[this.propertyInMaterial] = null;
                     this._isEnabled = false;
                 }
-
             } else {
                 return this._isEnabled;
             }
@@ -152,6 +172,9 @@ module RW.TextureEditor {
                 strings.push(varName + ".mirrorPlane = new BABYLON.Plane(" + array[0] + "," + array[1] + "," + array[2] + "," + array[3] + ")");
                 strings.push("// Change the render list to fit your needs. The scene's meshes is being used per default");
                 strings.push(varName + ".renderList = " + sceneVarName + ".meshes");
+            } else if (this.babylonTextureType == BabylonTextureType.CUBE) {
+                strings.push("//TODO change the root URL for your cube reflection texture!");
+                strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
             } else {
                 var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
                 strings.push("var " + varName + " = new BABYLON.Texture('"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");

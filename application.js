@@ -27,6 +27,191 @@
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var BABYLON;
+(function (BABYLON) {
+    var ExtendedCubeTexture = (function (_super) {
+        __extends(ExtendedCubeTexture, _super);
+        function ExtendedCubeTexture(urls, scene, _noMipmap) {
+            _super.call(this, scene);
+            this.urls = urls;
+            this.scene = scene;
+            this._noMipmap = _noMipmap;
+            this.coordinatesMode = BABYLON.Texture.CUBIC_MODE;
+
+            this.name = "ExtendedCubeTexture";
+            this.url = urls[0];
+            this.hasAlpha = false;
+
+            if (!this._texture) {
+                if (!scene.useDelayedTextureLoading) {
+                    this._texture = this.createCubeTexture(urls, this._noMipmap, scene, urls);
+                } else {
+                    this.delayLoadState = BABYLON.Engine.DELAYLOADSTATE_NOTLOADED;
+                }
+            }
+
+            this.isCube = true;
+
+            this._textureMatrix = BABYLON.Matrix.Identity();
+        }
+        ExtendedCubeTexture.prototype.clone = function () {
+            var _this = this;
+            var urls = [];
+            this.urls.forEach(function (url) {
+                _this.urls.push(url);
+            });
+            var newTexture = new BABYLON.ExtendedCubeTexture(urls, this.getScene(), this._noMipmap);
+
+            // Base texture
+            newTexture.level = this.level;
+            newTexture.wrapU = this.wrapU;
+            newTexture.wrapV = this.wrapV;
+            newTexture.coordinatesIndex = this.coordinatesIndex;
+            newTexture.coordinatesMode = this.coordinatesMode;
+
+            return newTexture;
+        };
+
+        // Methods
+        ExtendedCubeTexture.prototype.delayLoad = function () {
+            if (this.delayLoadState != BABYLON.Engine.DELAYLOADSTATE_NOTLOADED) {
+                return;
+            }
+
+            this.delayLoadState = BABYLON.Engine.DELAYLOADSTATE_LOADED;
+
+            if (!this._texture) {
+                this._texture = this.createCubeTexture(this.urls, this._noMipmap, this.scene, this.urls);
+            }
+        };
+
+        ExtendedCubeTexture.prototype.getReflectionTextureMatrix = function () {
+            return this._textureMatrix;
+        };
+
+        //The parameters are here just in case I will ever move this function to the engine. The are private members of this class.
+        //buffers is also redundant. buffers == urls ...
+        ExtendedCubeTexture.prototype.createCubeTexture = function (urls, noMipmap, scene, buffers) {
+            if (urls.length != 6) {
+                throw new Error("Not enough images to create a cube. Aborting.");
+            }
+
+            //avoiding errors in typescript trying to access a private member
+            var engine = scene.getEngine();
+            var gl = engine['_gl'];
+
+            //To enable DDS Support this needs to be uncommented. rootUrl should also be added...
+            //var extension = rootUrl.substr(rootUrl.length - 4, 4).toLowerCase();
+            //var isDDS = engine.getCaps().s3tc && (extension === ".dds");
+            //if (isDDS) {
+            //    return engine.createCubeTexture(rootUrl, scene, extensions);
+            //}
+            var texture = gl.createTexture();
+            texture.isCube = true;
+
+            //texture.url = rootUrl;
+            //Is this needed?
+            texture.url = urls[0];
+            texture.references = 1;
+            engine['_loadedTexturesCache'].push(texture);
+
+            var imagesArray = [];
+
+            var onError = function () {
+                console.log("error loadig image");
+            };
+
+            var onImageLoadSuccess = function (image) {
+                imagesArray.push(image);
+                if (imagesArray.length == 6) {
+                    onImagesLoadSuccess(imagesArray);
+                }
+            };
+
+            var onImagesLoadSuccess = function (images) {
+                var width = BABYLON.Tools.GetExponantOfTwo(images[0].width, engine.getCaps().maxCubemapTextureSize);
+                var height = width;
+
+                var canvas = engine['_workingCanvas'];
+                var context = engine['_workingContext'];
+
+                canvas.width = width;
+                canvas.height = height;
+
+                var faces = [
+                    gl.TEXTURE_CUBE_MAP_POSITIVE_X, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+                    gl.TEXTURE_CUBE_MAP_NEGATIVE_X, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
+                ];
+
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
+
+                for (var index = 0; index < faces.length; index++) {
+                    context.drawImage(images[index], 0, 0, images[index].width, images[index].height, 0, 0, width, height);
+                    gl.texImage2D(faces[index], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+                }
+
+                if (!noMipmap) {
+                    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+                }
+
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, noMipmap ? gl.LINEAR : gl.LINEAR_MIPMAP_LINEAR);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+                engine._activeTexturesCache = [];
+
+                texture._width = width;
+                texture._height = height;
+                texture.isReady = true;
+            };
+
+            for (var i = 0; i < 6; i++) {
+                var url = urls[i];
+
+                //taken from babylon engine createTexture
+                var extension;
+                var fromData = false;
+                if (url.substr(0, 5) === "data:") {
+                    fromData = true;
+                }
+
+                /*if (!fromData)
+                extension = url.substr(url.length - 4, 4).toLowerCase();
+                else {
+                var oldUrl = url;
+                fromData = oldUrl.split(':');
+                url = oldUrl;
+                extension = fromData[1].substr(fromData[1].length - 4, 4).toLowerCase();
+                }
+                
+                var isDDS = engine.getCaps().s3tc && (extension === ".dds");
+                var isTGA = (extension === ".tga");
+                //not supporting dds or tga single images at the moment. Not really planned as well... DDS is supported using the engine's function.
+                if (isDDS || isTGA) {
+                throw new Error("Extensions not yet supported");
+                }*/
+                if (!fromData)
+                    BABYLON.Tools.LoadImage(url, onImageLoadSuccess, onError, scene.database);
+                else
+                    BABYLON.Tools.LoadImage(buffers[i], onImageLoadSuccess, onError, scene.database);
+            }
+
+            return texture;
+        };
+        return ExtendedCubeTexture;
+    })(BABYLON.BaseTexture);
+    BABYLON.ExtendedCubeTexture = ExtendedCubeTexture;
+})(BABYLON || (BABYLON = {}));
 var RW;
 (function (RW) {
     (function (TextureEditor) {
@@ -593,10 +778,9 @@ var RW;
                     link: function (scope, element, attr) {
                         var texture = scope.tex;
 
-                        function render(src, canvasId, onSuccess) {
+                        function render(src, canvas, onSuccess) {
                             var image = new Image();
                             image.onload = function () {
-                                var canvas = document.getElementById(canvasId);
                                 var ctx = canvas.getContext("2d");
 
                                 //todo use canvas.style.height and width to keep aspect ratio
@@ -622,7 +806,7 @@ var RW;
                             image.src = src;
                         }
 
-                        function loadImage(src, canvasId) {
+                        function loadImage(src, canvas) {
                             //	Prevent any non-image file type from being read.
                             if (!src.type.match(/image.*/)) {
                                 console.log("The dropped file is not an image: ", src.type);
@@ -632,7 +816,7 @@ var RW;
                             //	Create our FileReader and run the results through the render function.
                             var reader = new FileReader();
                             reader.onload = function (e) {
-                                render(e.target.result, canvasId, function () {
+                                render(e.target.result, canvas, function () {
                                     if (scope.updateTexture) {
                                         scope.updateTexture({ $name: texture.name });
                                     }
@@ -640,20 +824,21 @@ var RW;
                             };
                             reader.readAsDataURL(src);
                         }
-                        for (var i = 0; i < texture.numberOfImages; i++) {
-                            var canvasId = (texture.canvasId + "-" + i);
 
-                            element.on("dragover", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                            });
-                            element.on("dragleave", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                            });
-                            element.on("drop", ".texture-canvas-drop", function (e) {
-                                e.preventDefault();
-                                loadImage(e.originalEvent.dataTransfer.files[0], canvasId);
-                            });
-                        }
+                        //preparing for 6 images.
+                        //for (var i = 0; i < 6; i++) {
+                        //var pos = i;
+                        element.on("dragover", ".texture-canvas-drop", function (e) {
+                            e.preventDefault();
+                        });
+                        element.on("dragleave", ".texture-canvas-drop", function (e) {
+                            e.preventDefault();
+                        });
+                        element.on("drop", ".texture-canvas-drop", function (e) {
+                            e.preventDefault();
+                            loadImage(e.originalEvent.dataTransfer.files[0], $(this).find("canvas")[0]);
+                        });
+                        //}
                     }
                 };
             }];
@@ -725,17 +910,28 @@ var RW;
                 if (this.textureVariable) {
                     this.textureVariable.dispose();
                 }
-                var canvasElement = document.getElementById(this.canvasId + "-0");
-                var base64 = canvasElement.toDataURL();
-                this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
-                if (this.name != "reflection") {
-                    this.coordinatesMode(0 /* EXPLICIT */);
-                } else {
-                    this.coordinatesMode(2 /* PLANAR */);
-                }
 
-                //this.babylonTextureType = BabylonTextureType.NORMAL;
-                this.init = true;
+                if (this.numberOfImages == 1) {
+                    var canvasElement = document.getElementById(this.canvasId + "-0");
+                    var base64 = canvasElement.toDataURL();
+                    this.textureVariable = new BABYLON.Texture(base64, this._material.getScene(), false, undefined, undefined, undefined, undefined, base64, false);
+                    if (this.name != "reflection") {
+                        this.coordinatesMode(0 /* EXPLICIT */);
+                    } else {
+                        this.coordinatesMode(2 /* PLANAR */);
+                    }
+                    this.babylonTextureType = 1 /* NORMAL */;
+                    this.init = true;
+                } else {
+                    var urls = [];
+                    for (var i = 0; i < 6; i++) {
+                        var canvasElement = document.getElementById(this.canvasId + "-" + i);
+                        urls.push(canvasElement.toDataURL());
+                    }
+                    this.textureVariable = new BABYLON.ExtendedCubeTexture(urls, this._material.getScene(), false);
+                    this.babylonTextureType = 3 /* CUBE */;
+                    this.init = true;
+                }
             };
 
             TextureDefinition.prototype.initFromMaterial = function () {
@@ -745,11 +941,15 @@ var RW;
 
             TextureDefinition.prototype.coordinatesMode = function (mode) {
                 if (angular.isDefined(mode)) {
+                    var shouldInit = mode != 3 /* CUBIC */ && this.numberOfImages == 6;
                     this.textureVariable.coordinatesMode = mode;
                     if (mode === 3 /* CUBIC */) {
                         this.numberOfImages = 6;
                     } else {
                         this.numberOfImages = 1;
+                    }
+                    if (shouldInit) {
+                        //this.initTexture();
                     }
                 } else {
                     return this.textureVariable ? this.textureVariable.coordinatesMode : 0;
@@ -777,13 +977,15 @@ var RW;
                         }
                         this.textureVariable['mirrorPlane'] = BABYLON.Plane.FromPoints(pointsArray[0], pointsArray[1], pointsArray[2]);
                         this.init = true;
-                        if (!this._isEnabled) {
-                            this.enabled(true);
-                        }
+
+                        //if (!this._isEnabled) {
+                        this.enabled(true);
+                        //}
                     } else {
                         this.babylonTextureType = 1 /* NORMAL */;
                         this._material[this.propertyInMaterial] = null;
                         this.init = false;
+                        this.initTexture();
                     }
                 } else {
                     return this._isEnabled && this.babylonTextureType == 4 /* MIRROR */;
@@ -793,6 +995,9 @@ var RW;
             TextureDefinition.prototype.enabled = function (enabled) {
                 if (angular.isDefined(enabled)) {
                     if (enabled) {
+                        if (!this.init) {
+                            this.initTexture();
+                        }
                         if (this.textureVariable)
                             this._material[this.propertyInMaterial] = this.textureVariable;
                         this._isEnabled = true;
@@ -832,6 +1037,9 @@ var RW;
                     strings.push(varName + ".mirrorPlane = new BABYLON.Plane(" + array[0] + "," + array[1] + "," + array[2] + "," + array[3] + ")");
                     strings.push("// Change the render list to fit your needs. The scene's meshes is being used per default");
                     strings.push(varName + ".renderList = " + sceneVarName + ".meshes");
+                } else if (this.babylonTextureType == 3 /* CUBE */) {
+                    strings.push("//TODO change the root URL for your cube reflection texture!");
+                    strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
                 } else {
                     var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
                     strings.push("var " + varName + " = new BABYLON.Texture('" + materialVarName + "_" + this.name + extension + "', " + sceneVarName + ")");
