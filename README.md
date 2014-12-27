@@ -1,4 +1,4 @@
-Babylon JS Material Editor v 0.1
+Babylon JS Material Editor v 0.9
 ================================
 
 An AngularJS based typescript project for real-time in browser material editing using BabylonJS (http://babylonjs.com)
@@ -30,10 +30,10 @@ Roadmap / Future plans
 * Upload your own object
 * Multimaterial support
 * Video support
-* Shaders
-* Supporting further types of textures (like mirror) - Partly Done
-* Support cube projection for reflections
-* Displacement maps
+* Shaders / Effects
+* ~~Supporting further types of textures (like mirror)~~ - Done : Mirror supported.
+* ~~Support cube projection for reflections~~ - Done
+* ~~Displacement maps~~ - Possible but will not be done at the moment. This is actually a change of the geometry. Maybe in future versions.
 
 Copyright (c) 2014 Raanan Weber (raananw@gmail.com)
 
