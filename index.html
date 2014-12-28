@@ -39,10 +39,17 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="row" ng-controller="MaterialController as materialController">
-                    <div class="col-md-12 alphaDiv">
-
+                    <div class="col-md-12 alphaDiv" ng-show="materialController.isMultiMaterial">
+                        <div class="col-md-6">
+                            <h4>Material Index</h4>
+                        </div>
+                        <div class="col-md-6 alphaDiv">
+                            <div class="btn-group" ng-repeat="i in materialController.getMaterialIndices() track by $index">
+                                <label class="btn btn-primary" ng-model="materialController.multiMaterialPosition" ng-click="materialController.initMaterial($index)" btn-radio="{{$index}}">{{$index}}</label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-12">
+                    <div class="col-md-12 alphaDiv">
                         <div class="btn-group">
                             <label class="btn btn-primary" ng-model="material.wireframe" btn-checkbox>Wireframe</label>
                             <label class="btn btn-primary" ng-model="material.pointsCloud" btn-checkbox>Points</label>
@@ -285,6 +292,40 @@
                         <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
                     </div>       
                 </div>
+                <button class="btn btn-default alphaDiv" ng-click="canvasController.objectSubMeshes()">Configure SubMeshes</button>
+                <script type="text/ng-template" id="objectSubMeshes.html">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Object Sub-Meshes - {{object.name}}</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p><span>Total Indices : {{totalNumberOfIndices}}</span> <span>Indices left : {{indicesLeft}}</span></p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Material-Idx</th>
+                                    <th>Start at index</th>
+                                    <th>Number of indices</th>
+                                    <th>Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody ng-repeat="subMesh in object.subMeshes track by $index">
+                                <tr>
+                                    <td>{{$index}}</td>
+                                    <td><input type="number" class="form-control" placeholder="MatIdx" ng-model="subMesh.materialIndex" ng-change="updateObject()"></td>
+                                    <td><input type="number" step="3" class="form-control" placeholder="IndexStart" ng-model="subMesh.indexStart" ng-change="updateObject()"></td>
+                                    <td><input type="number" step="3" class="form-control" placeholder="IndexCount" ng-model="subMesh.indexCount" ng-change="updateObject()"></td>
+                                    <td><button class="btn btn-primary" ng-click="removeSubMesh($index)">Remove</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-primary" ng-click="addSubMesh()">Add new SubMesh</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" ng-click="close()">Done</button>
+                    </div>
+                </script>
+
                 <!--<div class="row alphaDiv">
                     <div class="col-md-6">
                         <h4>Alpha</h4>

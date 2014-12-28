@@ -18,6 +18,7 @@ module RW.TextureEditor {
                     'ui.slider'
                 ])
                     .controller("CanvasController", CanvasController)
+                    .controller("ObjectSubMeshesController", ObjectSubMeshesController)
                     .controller("MaterialController", MaterialController)
                     .controller("MaterialExportModalController", MaterialExportModlController)
                     .controller("TextureController", TextureController)

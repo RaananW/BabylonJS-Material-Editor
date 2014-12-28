@@ -105,6 +105,7 @@ module RW.TextureEditor {
                     this.textureVariable['renderList'] = this._material.getScene().meshes;
                     //calculate plane
                     var pointsArray: Array<BABYLON.Vector3> = [];
+                    //TODO maybe find a different way of computing the plane? trying to avoid getting the object in the constructor.
                     var meshWorldMatrix = this._connectedMesh.computeWorldMatrix();
                     var verticesPos = this._connectedMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
                     for (var i = 0; i < 3; i++) {

@@ -64,7 +64,7 @@
             var cylinder = BABYLON.Mesh.CreateCylinder("Cylinder", 3, 3, 3, 6, 1, scene);
             var torus = BABYLON.Mesh.CreateTorus("Torus", 5, 1, 10, scene);
             var knot = BABYLON.Mesh.CreateTorusKnot("Knot", 2, 0.5, 128, 64, 2, 3, scene);
-            
+                        
             box.position = new BABYLON.Vector3(-10, 0, 0);   
             sphere.position = new BABYLON.Vector3(0, 10, 0); 
             plan.position.z = 10;                            
@@ -79,7 +79,6 @@
                 mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
                 mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
                 mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, (evt: BABYLON.ActionEvent) => {
-                    console.log(evt);
                     this.selectObject(mesh);
                 }));
             });
@@ -113,10 +112,30 @@
         public selectObjectInPosition(position: number) {
             this.selectObject(this._scene.meshes[position]);
         }
+
+        public getObjectInPosition(position: number) : BABYLON.AbstractMesh {
+            return this._scene.meshes[position];
+        }
          
         public selectObject(mesh: BABYLON.AbstractMesh) {
-            /*this.$rootScope.texturedObject = */this._textureObject = mesh;
-            //this.$rootScope.material = <BABYLON.StandardMaterial> this._textureObject.material;
+            this._textureObject = mesh;
+            //Update the material to multimaterial, if needed. and Vice versa!
+            if (mesh.subMeshes.length > 1 && mesh.material instanceof BABYLON.StandardMaterial) {
+                var mat = mesh.material;
+                var multimat = new BABYLON.MultiMaterial(mesh.name + "MultiMat", this._scene);
+                multimat.subMaterials.push(mat);
+                for (var i = 1; i < mesh.subMeshes.length; i++) {
+                    multimat.subMaterials.push(new BABYLON.StandardMaterial(mesh.name + "MatInMulti" + i, this._scene));
+                }
+                this._textureObject.material = multimat;
+            } else if (mesh.subMeshes.length == 1 && mesh.material instanceof BABYLON.MultiMaterial) {
+                mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", this._scene);
+            } else if (mesh.material instanceof BABYLON.MultiMaterial && mesh.material['subMaterials'].length < mesh.subMeshes.length) {
+                for (var i = <number> mesh.material['subMaterials'].length; i < mesh.subMeshes.length; i++) {
+                    mesh.material['subMaterials'].push(new BABYLON.StandardMaterial(mesh.name + "MatInMulti" + i, this._scene));
+                }
+            }
+
             this.$rootScope.$broadcast("objectChanged", this._textureObject);
             this.directCameraTo(this._textureObject);
         }

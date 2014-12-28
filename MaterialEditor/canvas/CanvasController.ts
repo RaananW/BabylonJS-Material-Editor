@@ -13,6 +13,7 @@ module RW.TextureEditor {
             public static $inject = [
                 '$scope',
                 '$timeout',
+                '$modal',
                 'canvasService'
             ];
 
@@ -25,6 +26,7 @@ module RW.TextureEditor {
             constructor(
                 private $scope: CanvasScope,
                 private $timeout: ng.ITimeoutService,
+                private $modal,
                 private canvasService:CanvasService
                 ) {
 
@@ -79,5 +81,25 @@ module RW.TextureEditor {
             public resetScene() {
                 this.canvasService.resetScene();
             }
+
+            public objectSubMeshes() {
+                var modalInstance = this.$modal.open({
+                    templateUrl: 'objectSubMeshes.html',
+                    controller: 'ObjectSubMeshesController',
+                    size: "lg",
+                    resolve: {
+                        object: () => {
+                            return this.canvasService.getObjectInPosition(this.selectedObjectPosition.value);
+                        }
+                    }
+                });
+
+                modalInstance.result.then(() => {
+                    //update the object
+                    this.objectSelected();
+                }, function () {
+                });
+            }    
+
         }
     }

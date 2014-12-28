@@ -14,7 +14,7 @@
                         'ui.bootstrap',
                         'colorpicker.module',
                         'ui.slider'
-                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("MaterialController", TextureEditor.MaterialController).controller("MaterialExportModalController", TextureEditor.MaterialExportModlController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage).directive("disableEnableButton", TextureEditor.disableEnableButton);
+                    ]).controller("CanvasController", TextureEditor.CanvasController).controller("ObjectSubMeshesController", TextureEditor.ObjectSubMeshesController).controller("MaterialController", TextureEditor.MaterialController).controller("MaterialExportModalController", TextureEditor.MaterialExportModlController).controller("TextureController", TextureEditor.TextureController).service("materialService", TextureEditor.MaterialService).service("canvasService", TextureEditor.CanvasService).directive("textureImage", TextureEditor.textureImage).directive("disableEnableButton", TextureEditor.disableEnableButton);
 
                     angular.bootstrap(document, [_this.app.name]);
                 });
@@ -216,10 +216,11 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var CanvasController = (function () {
-            function CanvasController($scope, $timeout, canvasService) {
+            function CanvasController($scope, $timeout, $modal, canvasService) {
                 var _this = this;
                 this.$scope = $scope;
                 this.$timeout = $timeout;
+                this.$modal = $modal;
                 this.canvasService = canvasService;
                 this.resetLightParameters = function (light) {
                     _this.$scope.light = light;
@@ -273,9 +274,30 @@ var RW;
             CanvasController.prototype.resetScene = function () {
                 this.canvasService.resetScene();
             };
+
+            CanvasController.prototype.objectSubMeshes = function () {
+                var _this = this;
+                var modalInstance = this.$modal.open({
+                    templateUrl: 'objectSubMeshes.html',
+                    controller: 'ObjectSubMeshesController',
+                    size: "lg",
+                    resolve: {
+                        object: function () {
+                            return _this.canvasService.getObjectInPosition(_this.selectedObjectPosition.value);
+                        }
+                    }
+                });
+
+                modalInstance.result.then(function () {
+                    //update the object
+                    _this.objectSelected();
+                }, function () {
+                });
+            };
             CanvasController.$inject = [
                 '$scope',
                 '$timeout',
+                '$modal',
                 'canvasService'
             ];
             return CanvasController;
@@ -376,7 +398,6 @@ var RW;
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
                     mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, function (evt) {
-                        console.log(evt);
                         _this.selectObject(mesh);
                     }));
                 });
@@ -412,10 +433,30 @@ var RW;
                 this.selectObject(this._scene.meshes[position]);
             };
 
-            CanvasService.prototype.selectObject = function (mesh) {
-                /*this.$rootScope.texturedObject = */ this._textureObject = mesh;
+            CanvasService.prototype.getObjectInPosition = function (position) {
+                return this._scene.meshes[position];
+            };
 
-                //this.$rootScope.material = <BABYLON.StandardMaterial> this._textureObject.material;
+            CanvasService.prototype.selectObject = function (mesh) {
+                this._textureObject = mesh;
+
+                //Update the material to multimaterial, if needed. and Vice versa!
+                if (mesh.subMeshes.length > 1 && mesh.material instanceof BABYLON.StandardMaterial) {
+                    var mat = mesh.material;
+                    var multimat = new BABYLON.MultiMaterial(mesh.name + "MultiMat", this._scene);
+                    multimat.subMaterials.push(mat);
+                    for (var i = 1; i < mesh.subMeshes.length; i++) {
+                        multimat.subMaterials.push(new BABYLON.StandardMaterial(mesh.name + "MatInMulti" + i, this._scene));
+                    }
+                    this._textureObject.material = multimat;
+                } else if (mesh.subMeshes.length == 1 && mesh.material instanceof BABYLON.MultiMaterial) {
+                    mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", this._scene);
+                } else if (mesh.material instanceof BABYLON.MultiMaterial && mesh.material['subMaterials'].length < mesh.subMeshes.length) {
+                    for (var i = mesh.material['subMaterials'].length; i < mesh.subMeshes.length; i++) {
+                        mesh.material['subMaterials'].push(new BABYLON.StandardMaterial(mesh.name + "MatInMulti" + i, this._scene));
+                    }
+                }
+
                 this.$rootScope.$broadcast("objectChanged", this._textureObject);
                 this.directCameraTo(this._textureObject);
             };
@@ -433,6 +474,59 @@ var RW;
             return CanvasService;
         })();
         TextureEditor.CanvasService = CanvasService;
+    })(RW.TextureEditor || (RW.TextureEditor = {}));
+    var TextureEditor = RW.TextureEditor;
+})(RW || (RW = {}));
+var RW;
+(function (RW) {
+    (function (TextureEditor) {
+        var ObjectSubMeshesController = (function () {
+            function ObjectSubMeshesController($scope, $modalInstance, object) {
+                var _this = this;
+                this.$scope = $scope;
+                this.$modalInstance = $modalInstance;
+                this.object = object;
+                $scope.object = object;
+                $scope.totalNumberOfIndices = object.getTotalIndices();
+
+                $scope.close = function () {
+                    $modalInstance.close();
+                };
+
+                $scope.updateObject = function () {
+                    var usedVertics = 0;
+                    object.subMeshes.forEach(function (subMesh) {
+                        //rounding to threes.
+                        var substract = subMesh.indexCount % 3;
+                        subMesh.indexCount -= subMesh.indexCount % 3;
+                        substract = subMesh.indexStart % 3;
+                        subMesh.indexStart -= substract;
+
+                        usedVertics += subMesh.indexCount;
+                    });
+                    $scope.indicesLeft = $scope.totalNumberOfIndices - usedVertics;
+                };
+
+                $scope.addSubMesh = function () {
+                    var count = _this.$scope.indicesLeft < 0 ? 0 : _this.$scope.indicesLeft;
+                    new BABYLON.SubMesh(object.subMeshes.length, 0, object.getTotalVertices(), _this.$scope.totalNumberOfIndices - _this.$scope.indicesLeft, count, object);
+                    $scope.updateObject();
+                };
+
+                $scope.removeSubMesh = function (index) {
+                    object.subMeshes.splice(index, 1);
+                    $scope.updateObject();
+                };
+                $scope.updateObject();
+            }
+            ObjectSubMeshesController.$inject = [
+                '$scope',
+                '$modalInstance',
+                'object'
+            ];
+            return ObjectSubMeshesController;
+        })();
+        TextureEditor.ObjectSubMeshesController = ObjectSubMeshesController;
     })(RW.TextureEditor || (RW.TextureEditor = {}));
     var TextureEditor = RW.TextureEditor;
 })(RW || (RW = {}));
@@ -492,11 +586,25 @@ var RW;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
                 this.afterObjectChanged = function (event, object) {
-                    _this.materialService.initMaterialSections(object);
-                    _this.$scope.material = object.material;
-                    _this.$scope.sectionNames = _this.materialService.getMaterialSectionsArray();
-                    _this.$scope.materialSections = _this.materialService.getMaterialSections();
+                    //If an object has more than one subMesh, it means I have already created a multi material object for it.
+                    _this._object = object;
+                    _this.isMultiMaterial = object.subMeshes.length > 1;
+                    _this.multiMaterialPosition = 0;
+                    if (_this.isMultiMaterial) {
+                        _this.numberOfMaterials = object.material.subMaterials.length;
+                    } else {
+                        _this.numberOfMaterials = 0;
+                    }
+                    console.log(_this.numberOfMaterials);
+                    _this.initMaterial(_this.multiMaterialPosition);
                 };
+                //for ng-repeat
+                this.getMaterialIndices = function () {
+                    return new Array(_this.numberOfMaterials);
+                };
+                this.isMultiMaterial = false;
+                this.multiMaterialPosition = 0;
+                this.numberOfMaterials = 0;
                 $scope.updateTexture = function (type) {
                     $scope.$apply(function () {
                         $scope.materialSections[type].texture.canvasUpdated();
@@ -505,6 +613,19 @@ var RW;
 
                 $scope.$on("objectChanged", this.afterObjectChanged);
             }
+            MaterialController.prototype.initMaterial = function (position) {
+                //making sure it is undefined if it is not multi material.
+                if (this.isMultiMaterial) {
+                    this.materialService.initMaterialSections(this._object, position);
+                    this.$scope.material = this._object.material.subMaterials[position];
+                } else {
+                    this.materialService.initMaterialSections(this._object);
+                    this.$scope.material = this._object.material;
+                }
+                this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
+                this.$scope.materialSections = this.materialService.getMaterialSections();
+            };
+
             MaterialController.prototype.exportMaterial = function () {
                 var _this = this;
                 var modalInstance = this.$modal.open({
@@ -588,15 +709,15 @@ var RW;
                 this.canvasService = canvasService;
                 //this.initMaterialSections();
             }
-            MaterialService.prototype.initMaterialSections = function (object) {
+            MaterialService.prototype.initMaterialSections = function (object, multiMaterialPosition) {
                 this.materialSections = {};
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", object, false, true, true);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", object, true, true, false);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", object, false, true, true);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", object, false, true, false);
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true, multiMaterialPosition);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true, multiMaterialPosition);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false, multiMaterialPosition);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", object, false, true, true, multiMaterialPosition);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", object, true, true, false, multiMaterialPosition);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", object, false, true, true, multiMaterialPosition);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", object, false, true, false, multiMaterialPosition);
             };
 
             MaterialService.prototype.getMaterialSectionsArray = function () {
@@ -712,20 +833,27 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var MaterialDefinitionSection = (function () {
-            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFresnel) {
+            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFresnel, multiMaterialPosition) {
                 this.name = name;
                 this._object = _object;
                 this.hasColor = hasColor;
                 this.hasTexture = hasTexture;
                 this.hasFresnel = hasFresnel;
+                this.multiMaterialPosition = multiMaterialPosition;
+                var material;
+                if (angular.isDefined(multiMaterialPosition)) {
+                    material = _object.material.subMaterials[multiMaterialPosition];
+                } else {
+                    material = _object.material;
+                }
                 if (hasColor) {
-                    this.color = new TextureEditor.HexToBabylon(name, _object.material);
+                    this.color = new TextureEditor.HexToBabylon(name, material);
                 }
                 if (hasTexture) {
-                    this.texture = new TextureEditor.TextureDefinition(name, _object.material, _object);
+                    this.texture = new TextureEditor.TextureDefinition(name, material, _object);
                 }
                 if (hasFresnel) {
-                    this.fresnel = new TextureEditor.FresnelDefinition(name, _object.material);
+                    this.fresnel = new TextureEditor.FresnelDefinition(name, material);
                 }
             }
             MaterialDefinitionSection.prototype.exportToJavascript = function (sceneVarName, materialName, materialVarName) {
@@ -970,6 +1098,8 @@ var RW;
 
                         //calculate plane
                         var pointsArray = [];
+
+                        //TODO maybe find a different way of computing the plane? trying to avoid getting the object in the constructor.
                         var meshWorldMatrix = this._connectedMesh.computeWorldMatrix();
                         var verticesPos = this._connectedMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
                         for (var i = 0; i < 3; i++) {

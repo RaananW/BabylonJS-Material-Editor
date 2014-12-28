@@ -3,15 +3,21 @@
         public color: HexToBabylon;
         public fresnel: FresnelDefinition;
         public texture: TextureDefinition;
-        constructor(public name: string, private _object: BABYLON.AbstractMesh, public hasColor, public hasTexture, public hasFresnel) {
+        constructor(public name: string, private _object: BABYLON.AbstractMesh, public hasColor, public hasTexture, public hasFresnel, public multiMaterialPosition?: number) {
+            var material: BABYLON.Material;
+            if (angular.isDefined(multiMaterialPosition)) {
+                material = (<BABYLON.MultiMaterial> _object.material).subMaterials[multiMaterialPosition];
+            } else {
+                material = _object.material;
+            }
             if (hasColor) {
-                this.color = new HexToBabylon(name, _object.material);
+                this.color = new HexToBabylon(name, material);
             }
             if (hasTexture) {
-                this.texture = new TextureDefinition(name, _object.material, _object);
+                this.texture = new TextureDefinition(name, material, _object);
             }
             if (hasFresnel) {
-                this.fresnel = new FresnelDefinition(name, _object.material);
+                this.fresnel = new FresnelDefinition(name, material);
             }
         }
 
