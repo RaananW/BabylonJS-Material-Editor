@@ -28,7 +28,7 @@ Roadmap / Future plans
 * ~~Change light properties~~ - Done
 * ~~Adaptation to BabylonJS 2.0~~ - Done
 * Upload your own object
-* Multimaterial support
+* ~~Multimaterial support~~ - Done
 * Video support
 * Shaders / Effects
 * ~~Supporting further types of textures (like mirror)~~ - Done : Mirror supported.
