@@ -7,7 +7,13 @@
         updateTexture(type): void;
         mirrorEnabled: boolean;
     }
-        
+     
+    /*
+    TODO
+        * Fix the alpha problem
+        * Multi Material Javascript export.
+    */
+       
     export class MaterialController {
 
         public static $inject = [
@@ -45,11 +51,13 @@
             //If an object has more than one subMesh, it means I have already created a multi material object for it.
             this._object = object;
             this.isMultiMaterial = object.subMeshes.length > 1;
-            this.multiMaterialPosition = 0;
+            
             if (this.isMultiMaterial) {
                 this.numberOfMaterials = (<BABYLON.MultiMaterial> object.material).subMaterials.length;
+                this.multiMaterialPosition = 0;
             } else {
                 this.numberOfMaterials = 0;
+                this.multiMaterialPosition = -1;
             }
             console.log(this.numberOfMaterials);
             this.initMaterial(this.multiMaterialPosition);
@@ -75,7 +83,18 @@
                 size: "lg",
                 resolve: {
                     materialDefinitions: () => {
-                        return this.$scope.materialSections;
+                        if (!this.isMultiMaterial)
+                            return [this.$scope.materialSections];
+                        else {
+                            var position = this.multiMaterialPosition;
+                            var matArray = []
+                            for (var i = 0; i < this.numberOfMaterials; i++) {
+                                this.initMaterial(i);
+                                matArray.push(this.$scope.materialSections);
+                            }
+                            this.initMaterial(position);
+                            return matArray;
+                        }
                     }
                 }
             });

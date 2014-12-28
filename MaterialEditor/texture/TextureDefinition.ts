@@ -181,7 +181,7 @@ module RW.TextureEditor {
                 strings.push("var " + varName + " = new BABYLON.Texture('"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");
             }
             //uvw stuff
-            ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAngle", "vAngle", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
+            ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
                 strings.push(varName + "." + param + " = " + this.textureVariable[param]);
             });
             strings.push("");

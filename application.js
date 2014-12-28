@@ -578,6 +578,11 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
+        /*
+        TODO
+        * Fix the alpha problem
+        * Multi Material Javascript export.
+        */
         var MaterialController = (function () {
             function MaterialController($scope, $modal /* modal from angular bootstrap ui */ , canvasService, materialService) {
                 var _this = this;
@@ -589,11 +594,13 @@ var RW;
                     //If an object has more than one subMesh, it means I have already created a multi material object for it.
                     _this._object = object;
                     _this.isMultiMaterial = object.subMeshes.length > 1;
-                    _this.multiMaterialPosition = 0;
+
                     if (_this.isMultiMaterial) {
                         _this.numberOfMaterials = object.material.subMaterials.length;
+                        _this.multiMaterialPosition = 0;
                     } else {
                         _this.numberOfMaterials = 0;
+                        _this.multiMaterialPosition = -1;
                     }
                     console.log(_this.numberOfMaterials);
                     _this.initMaterial(_this.multiMaterialPosition);
@@ -634,7 +641,18 @@ var RW;
                     size: "lg",
                     resolve: {
                         materialDefinitions: function () {
-                            return _this.$scope.materialSections;
+                            if (!_this.isMultiMaterial)
+                                return [_this.$scope.materialSections];
+                            else {
+                                var position = _this.multiMaterialPosition;
+                                var matArray = [];
+                                for (var i = 0; i < _this.numberOfMaterials; i++) {
+                                    _this.initMaterial(i);
+                                    matArray.push(_this.$scope.materialSections);
+                                }
+                                _this.initMaterial(position);
+                                return matArray;
+                            }
                         }
                     }
                 });
@@ -672,19 +690,30 @@ var RW;
                 $scope.updateExport = function () {
                     var strings = [];
                     strings.push("//Material generated using the babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
-                    strings.push("\n");
-                    strings.push("var " + _this.$scope.materialVariableName + " = new BABYLON.StandardMaterial('" + _this.$scope.materialName + "', " + _this.$scope.sceneVariableName + ")");
-                    strings.push("\n");
+                    strings.push("");
+                    var className = _this.materialDefinitions.length > 1 ? "MultiMaterial" : "StandardMaterial";
+                    strings.push("var " + _this.$scope.materialVariableName + " = new BABYLON." + className + "('" + _this.$scope.materialName + "', " + _this.$scope.sceneVariableName + ")");
 
                     var exports = [];
 
                     exports.push(strings.join(";\n"));
 
-                    Object.keys(_this.materialDefinitions).forEach(function (definition) {
-                        exports.push(_this.materialDefinitions[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
-                    });
+                    if (_this.materialDefinitions.length == 1) {
+                        Object.keys(_this.materialDefinitions[0]).forEach(function (definition) {
+                            exports.push(_this.materialDefinitions[0][definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
+                        });
+                    } else {
+                        for (var i = 0; i < _this.materialDefinitions.length; ++i) {
+                            var matVarName = _this.$scope.materialVariableName + "_" + i;
+                            exports.push("var " + matVarName + " = new BABYLON.StandardMaterial('" + _this.$scope.materialName + " " + i + "', " + _this.$scope.sceneVariableName + ")");
+                            Object.keys(_this.materialDefinitions[i]).forEach(function (definition) {
+                                exports.push(_this.materialDefinitions[i][definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName + " " + i, matVarName));
+                            });
+                            exports.push(_this.$scope.materialVariableName + ".subMaterials[" + i + "] = " + matVarName);
+                        }
+                    }
 
-                    _this.$scope.materialExport = exports.join(";\n").split("\n;\n").join("\n");
+                    _this.$scope.materialExport = exports.join(";\n").replace(/\n;\n/g, "\n\n");
                 };
 
                 $scope.updateExport();
@@ -872,10 +901,10 @@ var RW;
                     strings.push(this.texture.exportAsJavascript(sceneVarName, materialVarName));
                 }
 
-                if (strings.length != 0) {
-                    strings.unshift("\n");
+                if (strings.length > 0) {
+                    strings.unshift("");
                     strings.unshift("// " + this.name + " definitions");
-                    strings.unshift("\n");
+                    strings.unshift("");
                 }
 
                 return strings.join(";\n");
@@ -1176,7 +1205,7 @@ var RW;
                 }
 
                 //uvw stuff
-                ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAngle", "vAngle", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach(function (param) {
+                ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach(function (param) {
                     strings.push(varName + "." + param + " = " + _this.textureVariable[param]);
                 });
                 strings.push("");
