@@ -52,7 +52,8 @@
                     }
                 }
 
-                this.$scope.materialExport = exports.join(";\n").replace(/\n;\n/g, "\n\n");
+                //TODO there must be a better way of formatting the text :) maybe a js beautifier?
+                this.$scope.materialExport = exports.join(";\n").replace(/\n;\n/g, "\n\n").replace(/\n;\n/g, "\n\n").replace(/\n\n\n/g, "\n\n");
 
             }
 
