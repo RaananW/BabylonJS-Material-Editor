@@ -59,7 +59,6 @@
                 this.numberOfMaterials = 0;
                 this.multiMaterialPosition = -1;
             }
-            console.log(this.numberOfMaterials);
             this.initMaterial(this.multiMaterialPosition);
         }
 

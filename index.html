@@ -312,8 +312,8 @@
                             <tbody ng-repeat="subMesh in object.subMeshes track by $index">
                                 <tr>
                                     <td>{{$index}}</td>
-                                    <td>subMesh.materialIndex<!--<div class="col-xs-5"><input type="number" class="form-control" placeholder="MatIdx" ng-model="subMesh.materialIndex" ng-change="updateObject()"></div>--></td>
-                                    <td><div class="col-xs-5"><input type="number" step="3" class="form-control" placeholder="IndexStart" ng-model="subMesh.indexStart" ng-change="updateObject()"></div></td>
+                                    <td>{{subMesh.materialIndex}}<!--<div class="col-xs-5"><input type="number" class="form-control" placeholder="MatIdx" ng-model="subMesh.materialIndex" ng-change="updateObject()"></div>--></td>
+                                    <td>{{subMesh.indexStart}}<!--<div class="col-xs-5"><input type="number" step="3" class="form-control" placeholder="IndexStart" ng-model="subMesh.indexStart" ng-change="updateObject()"></div>--></td>
                                     <td><div class="col-xs-5"><input type="number" step="3" class="form-control" placeholder="IndexCount" ng-model="subMesh.indexCount" ng-change="updateObject()"></div></td>
                                     <td><button class="btn btn-primary" ng-click="removeSubMesh($index)">Remove</button></td>
                                 </tr>

@@ -490,19 +490,43 @@ var RW;
                 $scope.totalNumberOfIndices = object.getTotalIndices();
 
                 $scope.close = function () {
+                    $scope.updateObject(true);
                     $modalInstance.close();
                 };
 
-                $scope.updateObject = function () {
+                $scope.updateObject = function (closeObject) {
+                    if (typeof closeObject === "undefined") { closeObject = false; }
                     var usedVertics = 0;
+                    var idx = 0;
                     object.subMeshes.forEach(function (subMesh) {
                         //rounding to threes.
                         var substract = subMesh.indexCount % 3;
                         subMesh.indexCount -= subMesh.indexCount % 3;
-                        substract = subMesh.indexStart % 3;
-                        subMesh.indexStart -= substract;
+
+                        //validation of using too many vertices
+                        if (usedVertics + subMesh.indexCount > $scope.totalNumberOfIndices) {
+                            subMesh.indexCount = $scope.totalNumberOfIndices - usedVertics;
+                        }
+
+                        //substract = subMesh.indexStart % 3;
+                        //subMesh.indexStart -= substract;
+                        subMesh.indexStart = usedVertics;
+
+                        //validation - too many indices from startIndex
+                        if (subMesh.indexStart + subMesh.indexCount > $scope.totalNumberOfIndices) {
+                            subMesh.indexCount = $scope.totalNumberOfIndices - subMesh.indexStart;
+                        }
+
+                        //making sure material index is correct.
+                        subMesh.materialIndex = idx;
 
                         usedVertics += subMesh.indexCount;
+                        idx++;
+
+                        //make sure all indices are used.
+                        if (closeObject && idx == object.subMeshes.length && usedVertics < $scope.totalNumberOfIndices) {
+                            subMesh.indexCount += $scope.totalNumberOfIndices - usedVertics;
+                        }
                     });
                     $scope.indicesLeft = $scope.totalNumberOfIndices - usedVertics;
                 };
@@ -602,7 +626,6 @@ var RW;
                         _this.numberOfMaterials = 0;
                         _this.multiMaterialPosition = -1;
                     }
-                    console.log(_this.numberOfMaterials);
                     _this.initMaterial(_this.multiMaterialPosition);
                 };
                 //for ng-repeat
