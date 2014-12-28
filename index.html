@@ -273,7 +273,7 @@
                                     </div>
                                 </div>
                             </form>
-                            <textarea ng-model="materialExport" style="width:100%; height:500px;">{{materialExport}}</textarea>
+                            <textarea class="form-control" ng-model="materialExport" style="width:100%; height:500px;">{{materialExport}}</textarea>
                         </div>
                         <div class="modal-footer">
                             <button class="btn btn-primary" ng-click="close()">Close</button>
@@ -299,7 +299,7 @@
                     </div>
                     <div class="modal-body">
                         <p><span>Total Indices : {{totalNumberOfIndices}}</span> <span>Indices left : {{indicesLeft}}</span></p>
-                        <table>
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -312,9 +312,9 @@
                             <tbody ng-repeat="subMesh in object.subMeshes track by $index">
                                 <tr>
                                     <td>{{$index}}</td>
-                                    <td><input type="number" class="form-control" placeholder="MatIdx" ng-model="subMesh.materialIndex" ng-change="updateObject()"></td>
-                                    <td><input type="number" step="3" class="form-control" placeholder="IndexStart" ng-model="subMesh.indexStart" ng-change="updateObject()"></td>
-                                    <td><input type="number" step="3" class="form-control" placeholder="IndexCount" ng-model="subMesh.indexCount" ng-change="updateObject()"></td>
+                                    <td><div class="col-xs-5"><input type="number" class="form-control" placeholder="MatIdx" ng-model="subMesh.materialIndex" ng-change="updateObject()"></div></td>
+                                    <td><div class="col-xs-5"><input type="number" step="3" class="form-control" placeholder="IndexStart" ng-model="subMesh.indexStart" ng-change="updateObject()"></div></td>
+                                    <td><div class="col-xs-5"><input type="number" step="3" class="form-control" placeholder="IndexCount" ng-model="subMesh.indexCount" ng-change="updateObject()"></div></td>
                                     <td><button class="btn btn-primary" ng-click="removeSubMesh($index)">Remove</button></td>
                                 </tr>
                             </tbody>
