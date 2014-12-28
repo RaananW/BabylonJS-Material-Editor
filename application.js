@@ -681,7 +681,6 @@ var RW;
                 $scope.materialName = "my awsome material";
                 $scope.materialVariableName = "myAwsomeMaterial";
                 $scope.sceneVariableName = "myWonderfulScene";
-                console.log($scope, $modalInstance, materialDefinitions);
 
                 $scope.close = function () {
                     $modalInstance.close();
@@ -689,7 +688,7 @@ var RW;
 
                 $scope.updateExport = function () {
                     var strings = [];
-                    strings.push("//Material generated using the babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
+                    strings.push("//Material generated using raananw's babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
                     strings.push("");
                     var className = _this.materialDefinitions.length > 1 ? "MultiMaterial" : "StandardMaterial";
                     strings.push("var " + _this.$scope.materialVariableName + " = new BABYLON." + className + "('" + _this.$scope.materialName + "', " + _this.$scope.sceneVariableName + ")");

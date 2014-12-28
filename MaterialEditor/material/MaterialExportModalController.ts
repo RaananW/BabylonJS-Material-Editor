@@ -20,9 +20,7 @@
         constructor(private $scope: MaterialModalScope, private $modalInstance: any, private materialDefinitions: Array<Array<MaterialDefinitionSection>>) {
             $scope.materialName = "my awsome material";
             $scope.materialVariableName = "myAwsomeMaterial";
-            $scope.sceneVariableName = "myWonderfulScene";
-            console.log($scope, $modalInstance, materialDefinitions);
-            
+            $scope.sceneVariableName = "myWonderfulScene";            
 
             $scope.close = () => {
                 $modalInstance.close();
@@ -30,7 +28,7 @@
 
             $scope.updateExport = () => {
                 var strings: Array<string> = [];
-                strings.push("//Material generated using the babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
+                strings.push("//Material generated using raananw's babylon material editor, https://github.com/raananw/BabylonJS-Material-Editor ");
                 strings.push("");
                 var className = this.materialDefinitions.length > 1 ? "MultiMaterial" : "StandardMaterial";
                 strings.push("var " + this.$scope.materialVariableName + " = new BABYLON." + className +"('" + this.$scope.materialName + "', " + this.$scope.sceneVariableName + ")");
