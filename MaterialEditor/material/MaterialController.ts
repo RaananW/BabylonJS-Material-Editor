@@ -48,6 +48,9 @@
         }
 
         public afterObjectChanged = (event: ng.IAngularEvent, object: BABYLON.AbstractMesh) => {
+            //if object has no submeshes, do nothing. It is a null parent object. Who needs it?...
+            if (object.subMeshes == null) return;
+
             //If an object has more than one subMesh, it means I have already created a multi material object for it.
             this._object = object;
             this.isMultiMaterial = object.subMeshes.length > 1;

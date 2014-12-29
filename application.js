@@ -10,6 +10,9 @@
             AngularStarter.prototype.start = function () {
                 var _this = this;
                 $(document).ready(function () {
+                    //zip configuration
+                    window['zip'].workerScriptsPath = "/vendor/zip/";
+
                     _this.app = angular.module(name, [
                         'ui.bootstrap',
                         'colorpicker.module',
@@ -227,6 +230,16 @@ var RW;
                     _this.$scope.lightSpecularColor = new TextureEditor.HexToBabylon('specular', light, "");
                     _this.$scope.lightDiffuseColor = new TextureEditor.HexToBabylon('diffuse', light, "");
                 };
+                this.objectSelected = function () {
+                    while (!_this.canvasService.selectObjectInPosition(_this.selectedObjectPosition.value)) {
+                        _this.selectedObjectPosition = _this.objectTypes[_this.selectedObjectPosition.value + 1];
+                    }
+                    ;
+                    if (_this.singleOutMesh)
+                        _this.singleOutChanged();
+                };
+                this.singleOutMesh = false;
+
                 this.lightTypes = [
                     { name: 'Hemispheric', type: 0 /* HEMISPHERIC */ },
                     { name: 'Point (in camera position)', type: 2 /* POINT */ }
@@ -235,24 +248,31 @@ var RW;
                 this.selectedLightType = this.lightTypes[0];
 
                 $scope.$on("sceneReset", function () {
-                    var meshes = canvasService.getObjects();
-                    _this.objectTypes = [];
-                    for (var pos = 0; pos < meshes.length; pos++) {
-                        _this.objectTypes.push({ name: meshes[pos].name, value: pos });
-                    }
-                    ;
-
-                    _this.selectedObjectPosition = _this.objectTypes[0];
+                    $timeout(function () {
+                        var meshes = canvasService.getObjects();
+                        _this.objectTypes = [];
+                        for (var pos = 0; pos < meshes.length; pos++) {
+                            _this.objectTypes.push({ name: meshes[pos].name, value: pos });
+                        }
+                        ;
+                        var pos = 0;
+                        _this.selectedObjectPosition = _this.objectTypes[pos];
+                        _this.objectSelected();
+                        _this.canvasService.sceneLoadingUI(false);
+                    });
                 });
 
-                $scope.$on("objectChanged", function (event, object) {
-                    $timeout(function () {
-                        $scope.$apply(function () {
-                            _this.selectedObjectPosition = _this.objectTypes.filter(function (map) {
-                                return map.name === object.name;
-                            })[0];
+                $scope.$on("objectChanged", function (event, object, fromClick) {
+                    if (typeof fromClick === "undefined") { fromClick = false; }
+                    if (fromClick) {
+                        $timeout(function () {
+                            $scope.$apply(function () {
+                                _this.selectedObjectPosition = _this.objectTypes.filter(function (map) {
+                                    return map.name === object.name;
+                                })[0];
+                            });
                         });
-                    });
+                    }
                 });
 
                 $scope.$on("lightChanged", function (event, light) {
@@ -267,8 +287,70 @@ var RW;
                 this.canvasService.initLight(this.selectedLightType.type);
             };
 
-            CanvasController.prototype.objectSelected = function () {
-                this.canvasService.selectObjectInPosition(this.selectedObjectPosition.value);
+            CanvasController.prototype.fileAdded = function () {
+                var _this = this;
+                //taken from zipJS demo 2 - http://gildas-lormeau.github.io/zip.js/demos/demo2.html
+                //TODO angularize it!
+                var fileInput = document.getElementById("scene-input");
+
+                this.canvasService.sceneLoadingUI(true);
+
+                var model = (function () {
+                    var URL = window.webkitURL || window['mozURL'] || window.URL;
+
+                    return {
+                        getEntries: function (file, onend) {
+                            window['zip'].createReader(new window['zip'].BlobReader(file), function (zipReader) {
+                                zipReader.getEntries(onend);
+                            }, onerror);
+                        },
+                        getEntryFile: function (entry, creationMethod, onend, onprogress) {
+                            var writer, zipFileEntry;
+
+                            function getData() {
+                                entry.getData(writer, function (blob) {
+                                    var blobURL = creationMethod == "Blob" ? URL.createObjectURL(blob) : zipFileEntry.toURL();
+                                    onend(entry, blobURL);
+                                }, onprogress);
+                            }
+
+                            if (creationMethod == "Blob") {
+                                writer = new window['zip'].BlobWriter();
+                                getData();
+                            }
+                        }
+                    };
+                })();
+
+                var sceneUrl;
+                var binaries = [];
+                var numberOfBinaries = 0;
+
+                function endsWith(str, suffix) {
+                    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+                }
+
+                model.getEntries(fileInput.files[0], function (entries) {
+                    entries.forEach(function (entry) {
+                        if (endsWith(entry.filename, ".jpg") || endsWith(entry.filename, ".png")) {
+                            numberOfBinaries++;
+                        }
+                    });
+
+                    entries.forEach(function (entry) {
+                        model.getEntryFile(entry, "Blob", function (originalEntry, url) {
+                            if (endsWith(originalEntry.filename, ".babylon")) {
+                                sceneUrl = url;
+                            } else if (endsWith(originalEntry.filename, ".jpg") || endsWith(entry.filename, ".png")) {
+                                binaries.push({ originalName: originalEntry.filename, newUrl: url });
+                            }
+                            if (binaries.length === numberOfBinaries && sceneUrl) {
+                                _this.canvasService.loadScene(sceneUrl, binaries);
+                            }
+                        }, function (progress) {
+                        });
+                    });
+                });
             };
 
             CanvasController.prototype.resetScene = function () {
@@ -293,6 +375,10 @@ var RW;
                     _this.objectSelected();
                 }, function () {
                 });
+            };
+
+            CanvasController.prototype.singleOutChanged = function () {
+                this.canvasService.singleOut(this.singleOutMesh, this.selectedObjectPosition.value);
             };
             CanvasController.$inject = [
                 '$scope',
@@ -363,13 +449,37 @@ var RW;
                 this._textureObject.material[property] = texture;
             };
 
+            CanvasService.prototype.loadScene = function (sceneBlob, binaries) {
+                var _this = this;
+                while (this._scene.meshes.pop()) {
+                }
+                BABYLON.Tools.LoadFile(sceneBlob, function (data) {
+                    binaries.forEach(function (binary) {
+                        var re = new RegExp(binary.originalName, "g");
+                        data = data.replace(re, binary.newUrl);
+                    });
+                    BABYLON.SceneLoader.ImportMesh("", "", "data:" + data, _this._scene, function (meshes) {
+                        meshes.forEach(function (mesh) {
+                            if (!mesh.material)
+                                mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", _this._scene);
+                            mesh.actionManager = new BABYLON.ActionManager(_this._scene);
+                            mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
+                            mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
+                            mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, function (evt) {
+                                _this.selectObject(mesh, true);
+                            }));
+                        });
+                        _this.$rootScope.$broadcast("sceneReset");
+                    });
+                });
+            };
+
             CanvasService.prototype.resetScene = function () {
                 for (var i = this._scene.meshes.length - 1; i > -1; i--) {
                     this._scene.meshes[i].dispose();
                 }
                 this.createDefaultScene();
                 this.$rootScope.$broadcast("sceneReset");
-                this.selectObject(this._scene.meshes[0]);
             };
 
             CanvasService.prototype.createDefaultScene = function () {
@@ -398,7 +508,7 @@ var RW;
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
                     mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
                     mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, function (evt) {
-                        _this.selectObject(mesh);
+                        _this.selectObject(mesh, true);
                     }));
                 });
             };
@@ -430,14 +540,18 @@ var RW;
             };
 
             CanvasService.prototype.selectObjectInPosition = function (position) {
-                this.selectObject(this._scene.meshes[position]);
+                return this.selectObject(this._scene.meshes[position]);
             };
 
             CanvasService.prototype.getObjectInPosition = function (position) {
                 return this._scene.meshes[position];
             };
 
-            CanvasService.prototype.selectObject = function (mesh) {
+            CanvasService.prototype.selectObject = function (mesh, fromClick) {
+                if (typeof fromClick === "undefined") { fromClick = false; }
+                if (mesh.subMeshes == null) {
+                    return false;
+                }
                 this._textureObject = mesh;
 
                 //Update the material to multimaterial, if needed. and Vice versa!
@@ -457,8 +571,9 @@ var RW;
                     }
                 }
 
-                this.$rootScope.$broadcast("objectChanged", this._textureObject);
+                this.$rootScope.$broadcast("objectChanged", this._textureObject, fromClick);
                 this.directCameraTo(this._textureObject);
+                return true;
             };
 
             CanvasService.prototype.directCameraTo = function (object) {
@@ -467,6 +582,33 @@ var RW;
 
             CanvasService.prototype.getObjects = function () {
                 return this._scene.meshes;
+            };
+
+            CanvasService.prototype.sceneLoadingUI = function (loading) {
+                if (typeof loading === "undefined") { loading = true; }
+                if (loading)
+                    this._scene.getEngine().displayLoadingUI();
+                else
+                    this._scene.getEngine().hideLoadingUI();
+            };
+
+            CanvasService.prototype.singleOut = function (enable, objectPosition) {
+                if (enable) {
+                    for (var i = 0; i < this._scene.meshes.length; i++) {
+                        var mesh = this._scene.meshes[i];
+                        mesh['lastEnabledState'] = mesh.isEnabled;
+                        if (i == objectPosition)
+                            mesh.setEnabled(true);
+                        else
+                            mesh.setEnabled(false);
+                    }
+                } else {
+                    for (var i = 0; i < this._scene.meshes.length; i++) {
+                        //if (i == objectPosition) continue;
+                        var mesh = this._scene.meshes[i];
+                        mesh.setEnabled(!!mesh['lastEnabledState']);
+                    }
+                }
             };
             CanvasService.$inject = [
                 '$rootScope'
@@ -615,6 +757,10 @@ var RW;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
                 this.afterObjectChanged = function (event, object) {
+                    //if object has no submeshes, do nothing. It is a null parent object. Who needs it?...
+                    if (object.subMeshes == null)
+                        return;
+
                     //If an object has more than one subMesh, it means I have already created a multi material object for it.
                     _this._object = object;
                     _this.isMultiMaterial = object.subMeshes.length > 1;
@@ -854,7 +1000,7 @@ var RW;
                 this.babylonColor = color;
                 var hex = "#";
                 ['r', 'g', 'b'].forEach(function (channel) {
-                    var c = color[channel] * 255;
+                    var c = ~~(color[channel] * 255);
                     hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
                 });
 
@@ -1071,8 +1217,8 @@ var RW;
                     } else {
                         this.babylonTextureType = 1 /* NORMAL */;
                     }
-                    this.enabled(true);
                     this.initFromMaterial();
+                    this.enabled(true);
                 } else {
                     this.babylonTextureType = 1 /* NORMAL */;
                     this.enabled(false);
@@ -1224,7 +1370,8 @@ var RW;
                     strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
                 } else {
                     var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
-                    strings.push("var " + varName + " = new BABYLON.Texture('" + materialVarName + "_" + this.name + extension + "', " + sceneVarName + ")");
+                    strings.push("//TODO change the filename to fit your needs!");
+                    strings.push("var " + varName + " = new BABYLON.Texture('textures/" + materialVarName + "_" + this.name + extension + "', " + sceneVarName + ")");
                 }
 
                 //uvw stuff

@@ -13,6 +13,7 @@
     <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.8/angular.min.js"></script>
     <script src="https://code.angularjs.org/1.3.8/angular-touch.min.js"></script>
+    <script src="vendor/zip/zip.js"></script>
     <script src="vendor/ui-bootstrap.js"></script>
     <script src="vendor/ui-color-picker.js"></script>
     <script src="vendor/slider.js"></script>
@@ -285,11 +286,14 @@
             </div>
             <div class="col-md-4" ng-controller="CanvasController as canvasController">
                 <div class="row alphaDiv">
-                    <div class="col-md-6">
-                        <h4>Mesh</h4>
+                    <div class="col-md-3">
+                        <h4 class="alphaDiv">Mesh</h4>
                     </div>
                     <div class="col-md-6 alphaDiv">
                         <select class="form-control" ng-model="canvasController.selectedObjectPosition" ng-options="object.name for object in canvasController.objectTypes" ng-change="canvasController.objectSelected()"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-default alphaDiv" ng-model="canvasController.singleOutMesh" ng-change="canvasController.singleOutChanged()" btn-checkbox>Single</button>
                     </div>       
                 </div>
                 <button class="btn btn-default alphaDiv" ng-click="canvasController.objectSubMeshes()">Configure SubMeshes</button>
@@ -339,7 +343,7 @@
                         </slider>
                     </div>
                 </div>-->
-                <button class="btn btn-default alphaDiv" ng-click="lightConfigure = !lightConfigure">Configure Light</button>
+                <button class="btn btn-default alphaDiv pull-right" ng-click="lightConfigure = !lightConfigure">Configure Light</button>
                 <div collapse="lightConfigure">
                     <h4>Light Type</h4>
                     <select class="form-control" ng-model="canvasController.selectedLightType" ng-options="type.name for type in canvasController.lightTypes" ng-change="canvasController.lightTypeChanged()"></select>
@@ -367,7 +371,9 @@
                     </div>
                 </div>
                 <canvas class="alphaDiv" id="renderCanvas"></canvas>
-                <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset Scene</button>
+                <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset To Defaults</button>
+                <input type="file" accept="application/zip" id="scene-input">
+                <button class="btn btn-default alphaDiv" ng-click="canvasController.fileAdded()">Set Scene</button>
             </div>
         </div>
     </div>

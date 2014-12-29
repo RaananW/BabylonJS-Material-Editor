@@ -12,6 +12,10 @@ module RW.TextureEditor {
 
         public start() {
             $(document).ready(() => {
+
+                //zip configuration
+                window['zip'].workerScriptsPath = "/vendor/zip/";
+
                 this.app = angular.module(name, [
                     'ui.bootstrap',
                     'colorpicker.module',
@@ -26,6 +30,7 @@ module RW.TextureEditor {
                     .service("canvasService", CanvasService)
                     .directive("textureImage", textureImage)
                     .directive("disableEnableButton", disableEnableButton)
+                    
                 ;
 
                 angular.bootstrap(document, [this.app.name]);

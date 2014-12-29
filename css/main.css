@@ -34,3 +34,7 @@ body {
 .alphaDiv {
     margin-top: 10px;
 }
+
+#scene-input {
+    color: transparent;
+}

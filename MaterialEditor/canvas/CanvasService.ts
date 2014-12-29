@@ -45,13 +45,36 @@
             this._textureObject.material[property] = texture;
         }
 
+        public loadScene(sceneBlob: string, binaries: Array<any>) {
+            while (this._scene.meshes.pop()) { }
+            BABYLON.Tools.LoadFile(sceneBlob, (data:string) => {
+                binaries.forEach((binary) => {
+                    var re = new RegExp(binary.originalName, "g");
+                    data = data.replace(re, binary.newUrl);
+                });
+                BABYLON.SceneLoader.ImportMesh("", "", "data:" + data, this._scene, (meshes: BABYLON.AbstractMesh[]) => {
+                    meshes.forEach((mesh) => {
+                        if(!mesh.material)
+                            mesh.material = new BABYLON.StandardMaterial(mesh.name + "Mat", this._scene);
+                        mesh.actionManager = new BABYLON.ActionManager(this._scene);
+                        mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
+                        mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, (evt: BABYLON.ActionEvent) => {
+                            this.selectObject(mesh, true);
+                        }));
+                    });
+                    this.$rootScope.$broadcast("sceneReset");
+                });
+            });
+            
+        }
+
         public resetScene() {
             for (var i = this._scene.meshes.length - 1; i > -1; i--) {
                 this._scene.meshes[i].dispose();
             }
             this.createDefaultScene();
             this.$rootScope.$broadcast("sceneReset");
-            this.selectObject(this._scene.meshes[0]);
         }
 
         private createDefaultScene() {
@@ -79,7 +102,7 @@
                 mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh, "renderOutline", false));
                 mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh, "renderOutline", true));
                 mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnRightPickTrigger, (evt: BABYLON.ActionEvent) => {
-                    this.selectObject(mesh);
+                    this.selectObject(mesh, true);
                 }));
             });
         }
@@ -110,15 +133,19 @@
         }
 
         public selectObjectInPosition(position: number) {
-            this.selectObject(this._scene.meshes[position]);
+            return this.selectObject(this._scene.meshes[position]);
         }
 
         public getObjectInPosition(position: number) : BABYLON.AbstractMesh {
             return this._scene.meshes[position];
         }
          
-        public selectObject(mesh: BABYLON.AbstractMesh) {
+        public selectObject(mesh: BABYLON.AbstractMesh, fromClick:boolean = false) {
+            if (mesh.subMeshes == null) {
+                return false;
+            }
             this._textureObject = mesh;
+
             //Update the material to multimaterial, if needed. and Vice versa!
             if (mesh.subMeshes.length > 1 && mesh.material instanceof BABYLON.StandardMaterial) {
                 var mat = mesh.material;
@@ -136,8 +163,9 @@
                 }
             }
 
-            this.$rootScope.$broadcast("objectChanged", this._textureObject);
+            this.$rootScope.$broadcast("objectChanged", this._textureObject, fromClick);
             this.directCameraTo(this._textureObject);
+            return true;
         }
 
         public directCameraTo(object: BABYLON.AbstractMesh) {
@@ -146,6 +174,32 @@
 
         public getObjects() {
             return this._scene.meshes;
+        }
+
+        public sceneLoadingUI(loading: boolean = true) {
+            if(loading)
+                this._scene.getEngine().displayLoadingUI();
+            else
+                this._scene.getEngine().hideLoadingUI();
+        }
+
+        public singleOut(enable: boolean, objectPosition:number) {
+            if (enable) {
+                for (var i = 0; i < this._scene.meshes.length; i++) {
+                    var mesh = this._scene.meshes[i];
+                    mesh['lastEnabledState'] = mesh.isEnabled;
+                    if (i == objectPosition)
+                        mesh.setEnabled(true);
+                    else
+                        mesh.setEnabled(false);
+                }
+            } else {
+                for (var i = 0; i < this._scene.meshes.length; i++) {
+                    //if (i == objectPosition) continue;
+                    var mesh = this._scene.meshes[i];
+                    mesh.setEnabled(!!mesh['lastEnabledState']);
+                }
+            }
         }
     }
 } 
