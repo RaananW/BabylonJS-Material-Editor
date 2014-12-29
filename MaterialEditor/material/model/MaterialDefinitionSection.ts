@@ -26,7 +26,7 @@
 
             if (this.hasColor) {
                 var colorArray = this.color.babylonColor.asArray();
-                strings.push(materialVarName + "." + this.color.propertyName + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
+                strings.push(materialVarName + "." + this.color.propertyName + " = new BABYLON.Color3(" + colorArray[0].toFixed(2) + ", " + colorArray[1].toFixed(2) + ", " + colorArray[2].toFixed(2) + ")");
             } 
             if (this.hasFresnel && this.fresnel.fresnelVariable.isEnabled) {
                 strings.push("//Fresnel Parameters ");
