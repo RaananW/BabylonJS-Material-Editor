@@ -370,10 +370,24 @@
                         </div>
                     </div>
                 </div>
-                <canvas class="alphaDiv" id="renderCanvas"></canvas>
-                <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset To Defaults</button>
-                <input type="file" accept="application/zip" id="scene-input">
-                <button class="btn btn-default alphaDiv" ng-click="canvasController.fileAdded()">Set Scene</button>
+                <div class="row">
+                    <canvas class="alphaDiv" id="renderCanvas"></canvas>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 alphaDiv">
+                        <div class="form-group">
+                            <input type="file" accept="application/zip" id="scene-input">
+                            <p class="help-block">Please select a zip containing mesh and textures.</p>
+                        </div>
+
+                    </div>
+                    <div class="col-md-6 alphaDiv">
+                        <button class="btn btn-default pull-right" ng-click="canvasController.fileAdded()">Import Object</button>
+                    </div>
+                    <div class="col-md-12 alphaDiv">
+                        <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset To Defaults</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
