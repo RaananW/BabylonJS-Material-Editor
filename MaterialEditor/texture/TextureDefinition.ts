@@ -27,8 +27,8 @@ module RW.TextureEditor {
                 } else {
                     this.babylonTextureType = BabylonTextureType.NORMAL;
                 }
-                this.enabled(true);
                 this.initFromMaterial();
+                this.enabled(true);
             } else {
                 this.babylonTextureType = BabylonTextureType.NORMAL;
                 this.enabled(false);
@@ -178,7 +178,8 @@ module RW.TextureEditor {
                 strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
             } else {
                 var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
-                strings.push("var " + varName + " = new BABYLON.Texture('"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");
+                strings.push("//TODO change the filename to fit your needs!");
+                strings.push("var " + varName + " = new BABYLON.Texture('textures/"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");
             }
             //uvw stuff
             ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
