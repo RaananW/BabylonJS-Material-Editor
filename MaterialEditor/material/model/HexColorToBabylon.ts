@@ -25,7 +25,7 @@
             this.babylonColor = color;
             var hex = "#";
             ['r', 'g', 'b'].forEach((channel) => {
-                var c = color[channel] * 255;
+                var c = ~~(color[channel] * 255);
                 hex = hex + ((c < 16) ? "0" + c.toString(16) : "" + c.toString(16));
             });
 
