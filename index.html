@@ -40,6 +40,53 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="row" ng-controller="MaterialController as materialController">
+
+                    <script type="text/ng-template" id="materialExport.html">
+                        <div class="modal-header">
+                            <h3 class="modal-title">MaterialExport</h3>
+                        </div>
+                        <div class="modal-body">
+                            <form class="form-horizontal" role="form">
+                                <div class="form-group">
+                                    <label class="col-sm-6">Scene variable name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="uScale" ng-model="sceneVariableName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Material variable name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="vScale" ng-model="materialVariableName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-6">Material name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" placeholder="uOffset" ng-model="materialName" ng-change="updateExport()">
+                                    </div>
+                                </div>
+                            </form>
+                            <textarea class="form-control" ng-model="materialExport" style="width:100%; height:500px;">{{materialExport}}</textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" ng-click="close()">Close</button>
+                        </div>
+                    </script>
+
+                    <div class="col-md-12">
+                        <form class="form-inline alphaDiv">
+                            <div class="form-group">
+                                <button class="btn btn-default" ng-click="materialController.exportMaterial()">Export to JavaScript</button>
+                                <button class="btn btn-default" ng-click="materialController.saveMaterial()">Save Material</button>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" class="form-control" placeholder="Material ID" ng-model="materialController.materialId" ng-change="">
+                            </div>
+                            <div class="checkbox">
+                                <button class="btn btn-default" ng-click="materialController.loadMaterial()">Load Material</button>
+                            </div>
+                        </form>
+                    </div>
                     <div class="col-md-12 alphaDiv" ng-show="materialController.isMultiMaterial">
                         <div class="col-md-6">
                             <h4>Material Index</h4>
@@ -249,39 +296,6 @@
                             </tab>
                         </tabset>
                     </div>
-                    <script type="text/ng-template" id="materialExport.html">
-                        <div class="modal-header">
-                            <h3 class="modal-title">MaterialExport</h3>
-                        </div>
-                        <div class="modal-body">
-                            <form class="form-horizontal" role="form">
-                                <div class="form-group">
-                                    <label class="col-sm-6">Scene variable name</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" placeholder="uScale" ng-model="sceneVariableName" ng-change="updateExport()">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-6">Material variable name</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" placeholder="vScale" ng-model="materialVariableName" ng-change="updateExport()">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-sm-6">Material name</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" placeholder="uOffset" ng-model="materialName" ng-change="updateExport()">
-                                    </div>
-                                </div>
-                            </form>
-                            <textarea class="form-control" ng-model="materialExport" style="width:100%; height:500px;">{{materialExport}}</textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" ng-click="close()">Close</button>
-                        </div>
-                    </script>
-
-                    <button class="alphaDiv btn btn-default" ng-click="materialController.exportMaterial()">Export Material</button>
                 </div>
             </div>
             <div class="col-md-4" ng-controller="CanvasController as canvasController">
@@ -385,7 +399,7 @@
                         <button class="btn btn-default pull-right" ng-click="canvasController.fileAdded()">Import Object</button>
                     </div>
                     <div class="col-md-12 alphaDiv">
-                        <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset To Defaults</button>
+                        <button class="btn btn-default alphaDiv" ng-click="canvasController.resetScene()">Reset Scene To Defaults</button>
                     </div>
                 </div>
             </div>

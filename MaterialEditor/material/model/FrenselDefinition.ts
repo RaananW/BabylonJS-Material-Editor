@@ -3,21 +3,21 @@
         public leftColor: HexToBabylon;
         public rightColor: HexToBabylon;
 
-        private _propertyInMaterial;
+        public propertyInMaterial;
 
         public fresnelVariable: BABYLON.FresnelParameters;
 
         constructor(private name: string, _material: BABYLON.Material) {
-            this._propertyInMaterial = name + 'FresnelParameters';
-            if (_material[this._propertyInMaterial]) {
-                this.fresnelVariable = _material[this._propertyInMaterial];
+            this.propertyInMaterial = name + 'FresnelParameters';
+            if (_material[this.propertyInMaterial]) {
+                this.fresnelVariable = _material[this.propertyInMaterial];
             } else {
                 this.fresnelVariable = new BABYLON.FresnelParameters();
                 this.fresnelVariable.isEnabled = false;
-                _material[this._propertyInMaterial] = this.fresnelVariable;
+                _material[this.propertyInMaterial] = this.fresnelVariable;
             }
-            this.leftColor = new HexToBabylon("left", _material[this._propertyInMaterial]),
-            this.rightColor = new HexToBabylon("right", _material[this._propertyInMaterial])
+            this.leftColor = new HexToBabylon("left", _material[this.propertyInMaterial]),
+            this.rightColor = new HexToBabylon("right", _material[this.propertyInMaterial])
 
         }
 
@@ -32,9 +32,19 @@
             strings.push(varName + "." + "leftColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
             colorArray = this.fresnelVariable.rightColor.asArray();
             strings.push(varName + "." + "rightColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
-            strings.push(materialVarName + "." + this._propertyInMaterial + " = " + varName);
+            strings.push(materialVarName + "." + this.propertyInMaterial + " = " + varName);
 
             return strings.join(";\n");
+        }
+
+        public exportAsBabylonScene() {
+            return {
+                bias: this.fresnelVariable.bias,
+                power: this.fresnelVariable.power,
+                isEnabled: this.fresnelVariable.isEnabled,
+                leftColor: this.fresnelVariable.leftColor.asArray(),
+                rightColor: this.fresnelVariable.rightColor.asArray()
+            }
         }
     }
 } 

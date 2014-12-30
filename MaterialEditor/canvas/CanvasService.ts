@@ -183,6 +183,14 @@
                 this._scene.getEngine().hideLoadingUI();
         }
 
+        public appendMaterial(materialId: string, successCallback, errorCallback) {
+            BABYLON.SceneLoader.Append(MaterialController.ServerUrl+"/materials/", materialId+".babylon", this._scene, successCallback, () => { }, errorCallback);
+        }
+
+        public getMaterial(materialId: string) {
+            return this._scene.getMaterialByID(materialId);
+        }
+
         public singleOut(enable: boolean, objectPosition:number) {
             if (enable) {
                 for (var i = 0; i < this._scene.meshes.length; i++) {

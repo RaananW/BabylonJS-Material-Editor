@@ -94,7 +94,7 @@ module RW.TextureEditor {
             }
 
             public fileAdded() {
-                //taken from zipJS demo 2 - http://gildas-lormeau.github.io/zip.js/demos/demo2.html
+                //taken from zipJS - http://gildas-lormeau.github.io/zip.js/demos/demo2.html
                 //TODO angularize it!
                 var fileInput = <HTMLInputElement> document.getElementById("scene-input");
 

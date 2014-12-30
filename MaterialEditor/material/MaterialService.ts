@@ -13,6 +13,7 @@
 
         public initMaterialSections(object: BABYLON.AbstractMesh, multiMaterialPosition?:number) {
             this.materialSections = {};
+            console.log(object.material);
             this.materialSections["diffuse"] = new MaterialDefinitionSection("diffuse", object, true, true, true, multiMaterialPosition);
             this.materialSections["emissive"] = new MaterialDefinitionSection("emissive", object, true, true, true, multiMaterialPosition);
             this.materialSections["ambient"] = new MaterialDefinitionSection("ambient", object, true, true, false, multiMaterialPosition);
@@ -28,6 +29,35 @@
 
         public getMaterialSections(): { [section: string]: MaterialDefinitionSection } {
             return this.materialSections;
+        }
+
+        public exportAsBabylonScene(materialId:string, originalMaterial:BABYLON.StandardMaterial) {
+            var material = {
+                id: materialId,
+                name: materialId,
+                alpha: originalMaterial.alpha,
+                backFaceCulling: originalMaterial.backFaceCulling,
+                specularPower: originalMaterial.specularPower,
+                useSpecularOverAlpha: originalMaterial.useSpecularOverAlpha,
+                useAlphaFromDiffuseTexture: originalMaterial.useAlphaFromDiffuseTexture
+            };
+            Object.keys(this.materialSections).forEach((definition) => {
+                this.materialSections[definition].exportAsBabylonScene(material);
+            });
+
+            //now make it babylon compatible
+            var babylonScene = {
+                "ambientColor": [0, 0, 0],
+                "autoClear": true,
+                "clearColor": [0.2, 0.2, 0.3],
+                "gravity": [0, 0, -0.9],
+                "materials": [material],
+                "lights": [],
+                "meshes": [],
+                "cameras":[]
+            }
+
+            return babylonScene;
         }
     }
 } 

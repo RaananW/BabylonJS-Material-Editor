@@ -43,12 +43,10 @@ var BABYLON;
         function ExtendedCubeTexture(urls, scene, _noMipmap) {
             _super.call(this, scene);
             this.urls = urls;
-            this.scene = scene;
             this._noMipmap = _noMipmap;
             this.coordinatesMode = BABYLON.Texture.CUBIC_MODE;
 
             this.name = "ExtendedCubeTexture";
-            this.url = urls[0];
             this.hasAlpha = false;
 
             if (!this._texture) {
@@ -90,7 +88,7 @@ var BABYLON;
             this.delayLoadState = BABYLON.Engine.DELAYLOADSTATE_LOADED;
 
             if (!this._texture) {
-                this._texture = this.createCubeTexture(this.urls, this._noMipmap, this.scene, this.urls);
+                this._texture = this.createCubeTexture(this.urls, this._noMipmap, this.getScene(), this.urls);
             }
         };
 
@@ -289,7 +287,7 @@ var RW;
 
             CanvasController.prototype.fileAdded = function () {
                 var _this = this;
-                //taken from zipJS demo 2 - http://gildas-lormeau.github.io/zip.js/demos/demo2.html
+                //taken from zipJS - http://gildas-lormeau.github.io/zip.js/demos/demo2.html
                 //TODO angularize it!
                 var fileInput = document.getElementById("scene-input");
 
@@ -592,6 +590,15 @@ var RW;
                     this._scene.getEngine().hideLoadingUI();
             };
 
+            CanvasService.prototype.appendMaterial = function (materialId, successCallback, errorCallback) {
+                BABYLON.SceneLoader.Append(TextureEditor.MaterialController.ServerUrl + "/materials/", materialId + ".babylon", this._scene, successCallback, function () {
+                }, errorCallback);
+            };
+
+            CanvasService.prototype.getMaterial = function (materialId) {
+                return this._scene.getMaterialByID(materialId);
+            };
+
             CanvasService.prototype.singleOut = function (enable, objectPosition) {
                 if (enable) {
                     for (var i = 0; i < this._scene.meshes.length; i++) {
@@ -750,10 +757,11 @@ var RW;
         * Multi Material Javascript export.
         */
         var MaterialController = (function () {
-            function MaterialController($scope, $modal /* modal from angular bootstrap ui */ , canvasService, materialService) {
+            function MaterialController($scope, $modal /* modal from angular bootstrap ui */ , $http, canvasService, materialService) {
                 var _this = this;
                 this.$scope = $scope;
                 this.$modal = $modal;
+                this.$http = $http;
                 this.canvasService = canvasService;
                 this.materialService = materialService;
                 this.afterObjectChanged = function (event, object) {
@@ -826,12 +834,57 @@ var RW;
                     }
                 });
             };
+
+            MaterialController.prototype.saveMaterial = function () {
+                var _this = this;
+                //todo get ID from server
+                this.$http.get(MaterialController.ServerUrl + "/getNextId").success(function (idObject) {
+                    var id = idObject['id'];
+                    var material = _this.materialService.exportAsBabylonScene(id, _this.$scope.material);
+
+                    //upload material object
+                    _this.$http.post(MaterialController.ServerUrl + "/materials", material).success(function (worked) {
+                        if (!worked['success']) {
+                            _this.errorMessage = "error uploading the material";
+                        }
+
+                        //upload binaries
+                        //update UI
+                        _this.materialId = id;
+                    });
+                });
+            };
+
+            MaterialController.prototype.loadMaterial = function () {
+                var _this = this;
+                if (!this.materialId) {
+                    this.errorMessage = "please enter material id!";
+                    return;
+                }
+                this.errorMessage = null;
+                this.canvasService.appendMaterial(this.materialId, function () {
+                    var material = _this.canvasService.getMaterial(_this.materialId);
+                    console.log(material);
+                    if (_this.isMultiMaterial) {
+                        _this._object.material.subMaterials[_this.multiMaterialPosition] = material;
+                        _this.initMaterial(_this.multiMaterialPosition);
+                    } else {
+                        _this._object.material = material;
+                        _this.initMaterial();
+                    }
+                }, function () {
+                    _this.errorMessage = "error loading material, make sure the ID is correct";
+                });
+            };
             MaterialController.$inject = [
                 '$scope',
                 '$modal',
+                '$http',
                 'canvasService',
                 'materialService'
             ];
+
+            MaterialController.ServerUrl = "http://localhost:1337";
             return MaterialController;
         })();
         TextureEditor.MaterialController = MaterialController;
@@ -909,6 +962,7 @@ var RW;
             }
             MaterialService.prototype.initMaterialSections = function (object, multiMaterialPosition) {
                 this.materialSections = {};
+                console.log(object.material);
                 this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true, multiMaterialPosition);
                 this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true, multiMaterialPosition);
                 this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false, multiMaterialPosition);
@@ -924,6 +978,36 @@ var RW;
 
             MaterialService.prototype.getMaterialSections = function () {
                 return this.materialSections;
+            };
+
+            MaterialService.prototype.exportAsBabylonScene = function (materialId, originalMaterial) {
+                var _this = this;
+                var material = {
+                    id: materialId,
+                    name: materialId,
+                    alpha: originalMaterial.alpha,
+                    backFaceCulling: originalMaterial.backFaceCulling,
+                    specularPower: originalMaterial.specularPower,
+                    useSpecularOverAlpha: originalMaterial.useSpecularOverAlpha,
+                    useAlphaFromDiffuseTexture: originalMaterial.useAlphaFromDiffuseTexture
+                };
+                Object.keys(this.materialSections).forEach(function (definition) {
+                    _this.materialSections[definition].exportAsBabylonScene(material);
+                });
+
+                //now make it babylon compatible
+                var babylonScene = {
+                    "ambientColor": [0, 0, 0],
+                    "autoClear": true,
+                    "clearColor": [0.2, 0.2, 0.3],
+                    "gravity": [0, 0, -0.9],
+                    "materials": [material],
+                    "lights": [],
+                    "meshes": [],
+                    "cameras": []
+                };
+
+                return babylonScene;
             };
             MaterialService.$inject = [
                 '$rootScope',
@@ -941,15 +1025,15 @@ var RW;
         var FresnelDefinition = (function () {
             function FresnelDefinition(name, _material) {
                 this.name = name;
-                this._propertyInMaterial = name + 'FresnelParameters';
-                if (_material[this._propertyInMaterial]) {
-                    this.fresnelVariable = _material[this._propertyInMaterial];
+                this.propertyInMaterial = name + 'FresnelParameters';
+                if (_material[this.propertyInMaterial]) {
+                    this.fresnelVariable = _material[this.propertyInMaterial];
                 } else {
                     this.fresnelVariable = new BABYLON.FresnelParameters();
                     this.fresnelVariable.isEnabled = false;
-                    _material[this._propertyInMaterial] = this.fresnelVariable;
+                    _material[this.propertyInMaterial] = this.fresnelVariable;
                 }
-                this.leftColor = new TextureEditor.HexToBabylon("left", _material[this._propertyInMaterial]), this.rightColor = new TextureEditor.HexToBabylon("right", _material[this._propertyInMaterial]);
+                this.leftColor = new TextureEditor.HexToBabylon("left", _material[this.propertyInMaterial]), this.rightColor = new TextureEditor.HexToBabylon("right", _material[this.propertyInMaterial]);
             }
             FresnelDefinition.prototype.exportAsJavascript = function (materialVarName) {
                 var strings = [];
@@ -962,9 +1046,19 @@ var RW;
                 strings.push(varName + "." + "leftColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
                 colorArray = this.fresnelVariable.rightColor.asArray();
                 strings.push(varName + "." + "rightColor" + " = new BABYLON.Color3(" + colorArray[0] + ", " + colorArray[1] + ", " + colorArray[2] + ")");
-                strings.push(materialVarName + "." + this._propertyInMaterial + " = " + varName);
+                strings.push(materialVarName + "." + this.propertyInMaterial + " = " + varName);
 
                 return strings.join(";\n");
+            };
+
+            FresnelDefinition.prototype.exportAsBabylonScene = function () {
+                return {
+                    bias: this.fresnelVariable.bias,
+                    power: this.fresnelVariable.power,
+                    isEnabled: this.fresnelVariable.isEnabled,
+                    leftColor: this.fresnelVariable.leftColor.asArray(),
+                    rightColor: this.fresnelVariable.rightColor.asArray()
+                };
             };
             return FresnelDefinition;
         })();
@@ -1077,6 +1171,23 @@ var RW;
                 }
 
                 return strings.join(";\n");
+            };
+
+            MaterialDefinitionSection.prototype.exportAsBabylonScene = function (materialObject) {
+                var id = materialObject.id;
+                if (this.hasColor) {
+                    materialObject[this.name] = this.color.babylonColor.asArray();
+                }
+                if (this.hasTexture) {
+                    if (this.texture.enabled()) {
+                        materialObject[this.texture.propertyInMaterial] = this.texture.exportAsBabylonScene(id);
+                    } else {
+                        materialObject[this.texture.propertyInMaterial] = null;
+                    }
+                }
+                if (this.hasFresnel && this.fresnel.fresnelVariable.isEnabled) {
+                    materialObject[this.fresnel.propertyInMaterial] = this.fresnel.exportAsBabylonScene();
+                }
             };
             return MaterialDefinitionSection;
         })();
@@ -1369,9 +1480,8 @@ var RW;
                     strings.push("//TODO change the root URL for your cube reflection texture!");
                     strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
                 } else {
-                    var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
                     strings.push("//TODO change the filename to fit your needs!");
-                    strings.push("var " + varName + " = new BABYLON.Texture('textures/" + materialVarName + "_" + this.name + extension + "', " + sceneVarName + ")");
+                    strings.push("var " + varName + " = new BABYLON.Texture('textures/" + materialVarName + "_" + this.name + this.getExtension() + "', " + sceneVarName + ")");
                 }
 
                 //uvw stuff
@@ -1381,6 +1491,22 @@ var RW;
                 strings.push("");
                 strings.push(materialVarName + "." + this.propertyInMaterial + " = " + varName);
                 return strings.join(";\n");
+            };
+
+            TextureDefinition.prototype.exportAsBabylonScene = function (materialId) {
+                var _this = this;
+                var textureObject = {
+                    name: "textures/" + materialId + "_" + this.name + this.getExtension()
+                };
+                ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach(function (param) {
+                    textureObject[param] = _this.textureVariable[param];
+                });
+
+                return textureObject;
+            };
+
+            TextureDefinition.prototype.getExtension = function () {
+                return this.textureVariable.hasAlpha ? ".png" : ".jpg";
             };
             return TextureDefinition;
         })();

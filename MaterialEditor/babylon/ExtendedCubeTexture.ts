@@ -1,16 +1,14 @@
 ﻿module BABYLON {
     export class ExtendedCubeTexture extends BaseTexture {
 
-        public url: string;
         public coordinatesMode = BABYLON.Texture.CUBIC_MODE;
 
         private _textureMatrix: Matrix;
 
-        constructor(private urls: Array<string>, private scene: Scene, private _noMipmap: boolean) {
+        constructor(public urls: Array<string>, scene: Scene, private _noMipmap: boolean) {
             super(scene);
 
             this.name = "ExtendedCubeTexture";
-            this.url = urls[0];
             this.hasAlpha = false;
                         
             if (!this._texture) {
@@ -52,7 +50,7 @@
             this.delayLoadState = BABYLON.Engine.DELAYLOADSTATE_LOADED;
             
             if (!this._texture) {
-                this._texture = this.createCubeTexture(this.urls, this._noMipmap, this.scene, this.urls);
+                this._texture = this.createCubeTexture(this.urls, this._noMipmap, this.getScene(), this.urls);
             }
         }
 

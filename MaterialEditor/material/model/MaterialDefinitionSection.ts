@@ -1,5 +1,6 @@
 ﻿module RW.TextureEditor {
     export class MaterialDefinitionSection {
+        public materialId:string;
         public color: HexToBabylon;
         public fresnel: FresnelDefinition;
         public texture: TextureDefinition;
@@ -44,6 +45,23 @@
             }
 
             return strings.join(";\n");
+        }
+
+        public exportAsBabylonScene(materialObject:any) {
+            var id = materialObject.id;
+            if(this.hasColor) {
+                materialObject[this.name] = this.color.babylonColor.asArray();
+            }
+            if (this.hasTexture) {
+                if(this.texture.enabled()) {
+                    materialObject[this.texture.propertyInMaterial] = this.texture.exportAsBabylonScene(id);
+                } else {
+                    materialObject[this.texture.propertyInMaterial] = null;
+                }
+            }
+            if (this.hasFresnel && this.fresnel.fresnelVariable.isEnabled) {
+                materialObject[this.fresnel.propertyInMaterial] = this.fresnel.exportAsBabylonScene();
+            }
         }
     }
 } 

@@ -177,9 +177,8 @@ module RW.TextureEditor {
                 strings.push("//TODO change the root URL for your cube reflection texture!");
                 strings.push("var " + varName + " = new BABYLON.CubeTexture(rootUrl, " + sceneVarName + " )");
             } else {
-                var extension = this.textureVariable.hasAlpha ? ".png" : ".jpg";
                 strings.push("//TODO change the filename to fit your needs!");
-                strings.push("var " + varName + " = new BABYLON.Texture('textures/"+ materialVarName+ "_" + this.name + extension +"', " + sceneVarName + ")");
+                strings.push("var " + varName + " = new BABYLON.Texture('textures/"+ materialVarName+ "_" + this.name + this.getExtension() +"', " + sceneVarName + ")");
             }
             //uvw stuff
             ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
@@ -188,6 +187,21 @@ module RW.TextureEditor {
             strings.push("");
             strings.push(materialVarName + "."+this.propertyInMaterial+ " = " + varName);
             return strings.join(";\n");
+        }
+
+        public exportAsBabylonScene(materialId: string) {
+            var textureObject = {
+                name: "textures/" + materialId + "_" + this.name + this.getExtension()
+            };
+            ["uScale", "vScale", "coordinatesMode", "uOffset", "vOffset", "uAng", "vAng", "level", "coordinatesIndex", "hasAlpha", "getAlphaFromRGB"].forEach((param) => {
+                textureObject[param] = this.textureVariable[param];
+            });
+            
+            return textureObject;
+        }
+
+        public getExtension() {
+            return this.textureVariable.hasAlpha ? ".png" : ".jpg";
         }
 
         //for ng-repeat

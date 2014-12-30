@@ -19,6 +19,7 @@
         public static $inject = [
             '$scope',
             '$modal',
+            '$http',
             'canvasService',
             'materialService'
         ];
@@ -27,11 +28,17 @@
         public numberOfMaterials: number;
         public isMultiMaterial: boolean;
 
+        public materialId: string;
+        public errorMessage: string;
+
         private _object: BABYLON.AbstractMesh;
+
+        public static ServerUrl: string = "http://localhost:1337";
                 
         constructor(
             private $scope: MaterialScope,
-            private $modal : any /* modal from angular bootstrap ui */, 
+            private $modal: any /* modal from angular bootstrap ui */, 
+            private $http: ng.IHttpService,
             private canvasService: CanvasService,
             private materialService:MaterialService
             ) {
@@ -99,6 +106,49 @@
                         }
                     }
                 }
+            });
+        }
+
+        public saveMaterial() {
+            //todo get ID from server
+            this.$http.get(MaterialController.ServerUrl + "/getNextId").success((idObject) => {
+                var id = idObject['id'];
+                var material = this.materialService.exportAsBabylonScene(id, this.$scope.material);
+                //upload material object
+                this.$http.post(MaterialController.ServerUrl + "/materials", material).success((worked) => {
+                    if (!worked['success']) {
+                        this.errorMessage = "error uploading the material";
+                    }
+                    //upload binaries
+
+                    //update UI
+                    this.materialId = id;
+                });
+                
+                
+            });
+            
+        }
+
+        public loadMaterial() {
+            if (!this.materialId) {
+                this.errorMessage = "please enter material id!";
+                return;
+            }
+            this.errorMessage = null;
+            this.canvasService.appendMaterial(this.materialId, () => {
+                var material: BABYLON.Material = this.canvasService.getMaterial(this.materialId);
+                console.log(material);
+                if (this.isMultiMaterial) {
+                    (<BABYLON.MultiMaterial> this._object.material).subMaterials[this.multiMaterialPosition] = material;
+                    this.initMaterial(this.multiMaterialPosition);
+                } else {
+                    this._object.material = material;
+                    this.initMaterial();
+                }
+                
+            }, () => {
+                this.errorMessage = "error loading material, make sure the ID is correct";
             });
         }
 
