@@ -144,7 +144,6 @@ module RW.TextureEditor {
                     if (this.textureVariable)
                         this._material[this.propertyInMaterial] = this.textureVariable;
                     this._isEnabled = true;
-                    console.log("here", this._isEnabled);
                     //update the canvas from the texture, is possible
                     this.updateCanvas();
                 } else {
@@ -163,7 +162,7 @@ module RW.TextureEditor {
             }
         }
 
-        public getCanvasImageUrls() : string[] {
+        public getCanvasImageUrls(onUpdateSuccess : (urls:string[]) => void) {
             var urls = [];
             if (!(this.textureVariable instanceof BABYLON.MirrorTexture || this.textureVariable instanceof BABYLON.CubeTexture)) {
                 this.updateCanvas(() => {
@@ -174,9 +173,11 @@ module RW.TextureEditor {
                         else
                             urls.push(canvas.toDataURL("image/jpeg", 0.8));
                     }
+                    if (urls.length == this.numberOfImages) {
+                        onUpdateSuccess(urls);
+                    }
                 });
             }
-            return urls;
         }
 
         public updateCanvas(onSuccess?: () => void) {

@@ -64,16 +64,17 @@
             //If an object has more than one subMesh, it means I have already created a multi material object for it.
             this._object = object;
             this.isMultiMaterial = object.subMeshes.length > 1;
-            
+            var force = false;
             if (this.isMultiMaterial) {
                 this.numberOfMaterials = (<BABYLON.MultiMaterial> object.material).subMaterials.length;
                 this.multiMaterialPosition = 0;
+                force = true;
             } else {
                 this.numberOfMaterials = 0;
                 this.multiMaterialPosition = -1;
             }
             //force should be false, it is however true while a multi-material object needs to be always initialized.
-            this.initMaterial(true, () => { }, this.multiMaterialPosition);
+            this.initMaterial(force, () => { this.$scope.$apply(); }, this.multiMaterialPosition);
         }
 
         public initMaterial(forceNew: boolean, onSuccess: () => void, position?:number) {
@@ -109,31 +110,25 @@
                         this.errorMessage = "error uploading the material";
                     }
                     //upload binaries
-                    var binaries = {}
-                    var hasTextures = false;
-                    //name: "textures/" + materialId + "_" + this.name + this.getExtension()
                     this.$scope.materialDefinition.sectionNames.forEach((sectionName) => {
                         if (this.$scope.materialDefinition.materialSections[sectionName].hasTexture && this.$scope.materialDefinition.materialSections[sectionName].texture.enabled()) {
                             var textureDefinition = this.$scope.materialDefinition.materialSections[sectionName].texture;
-                            var urls = textureDefinition.getCanvasImageUrls();
-                            if (urls.length == 1) {
-                                binaries[id + '_' + textureDefinition.name + textureDefinition.getExtension()] = urls[0];
-                                hasTextures = true;
-                            }
+                            textureDefinition.getCanvasImageUrls((urls) => {
+                                if (urls.length == 1) {
+                                    //textures will be uploaded async. The user should be notified about it!
+                                    var obj = {}
+                                    obj[id + '_' + textureDefinition.name + textureDefinition.getExtension()] = urls[0];
+                                    this.$http.post(MaterialController.ServerUrl + "/textures", obj).success((worked) => {
+                                        if (!worked['success']) {
+                                            this.errorMessage = "error uploading the textures";
+                                        }
+                                    });
+                                }
+                            });
                         }
                     });
-                    if (hasTextures) {
-                        this.$http.post(MaterialController.ServerUrl + "/textures", binaries).success((worked) => {
-                            if (!worked['success']) {
-                                this.errorMessage = "error uploading the textures";
-                            }
-                            //update UI
-                            this.materialId = id;
-                        });
-                    } else {
-                        //update UI
-                        this.materialId = id;
-                    }
+                    //update the UI
+                    this.materialId = id;
                 });
                 
                 
@@ -149,7 +144,6 @@
             this.errorMessage = null;
             this.canvasService.appendMaterial(this.materialId, () => {
                 var material: BABYLON.Material = this.canvasService.getMaterial(this.materialId);
-                console.log(material);
                 //250 ms delay of material loading and scope apply so that the image can be loaded.
                 //This can be avoided wit using callbacks all the way from the texture object (which will require quite a lot of changes).
                 //I assume 250ms is enough to load a local image to the canvas.
@@ -157,10 +151,10 @@
                     //this.$scope.$apply(() => {
                     if (this.isMultiMaterial) {
                         (<BABYLON.MultiMaterial> this._object.material).subMaterials[this.multiMaterialPosition] = material;
-                        this.initMaterial(true, () => { console.log("init", this.$scope.$apply()) }, this.multiMaterialPosition);
+                        this.initMaterial(true, () => { this.$scope.$apply() }, this.multiMaterialPosition);
                     } else {
                         this._object.material = material;
-                        this.initMaterial(true, () => { console.log("init", this.$scope.$apply()) });
+                        this.initMaterial(true, () => { this.$scope.$apply() });
                     }
                     //});   
                     //this.$scope.$apply(() => {

@@ -773,17 +773,19 @@ var RW;
                     //If an object has more than one subMesh, it means I have already created a multi material object for it.
                     _this._object = object;
                     _this.isMultiMaterial = object.subMeshes.length > 1;
-
+                    var force = false;
                     if (_this.isMultiMaterial) {
                         _this.numberOfMaterials = object.material.subMaterials.length;
                         _this.multiMaterialPosition = 0;
+                        force = true;
                     } else {
                         _this.numberOfMaterials = 0;
                         _this.multiMaterialPosition = -1;
                     }
 
                     //force should be false, it is however true while a multi-material object needs to be always initialized.
-                    _this.initMaterial(true, function () {
+                    _this.initMaterial(force, function () {
+                        _this.$scope.$apply();
                     }, _this.multiMaterialPosition);
                 };
                 //for ng-repeat
@@ -838,33 +840,26 @@ var RW;
                         }
 
                         //upload binaries
-                        var binaries = {};
-                        var hasTextures = false;
-
-                        //name: "textures/" + materialId + "_" + this.name + this.getExtension()
                         _this.$scope.materialDefinition.sectionNames.forEach(function (sectionName) {
                             if (_this.$scope.materialDefinition.materialSections[sectionName].hasTexture && _this.$scope.materialDefinition.materialSections[sectionName].texture.enabled()) {
                                 var textureDefinition = _this.$scope.materialDefinition.materialSections[sectionName].texture;
-                                var urls = textureDefinition.getCanvasImageUrls();
-                                if (urls.length == 1) {
-                                    binaries[id + '_' + textureDefinition.name + textureDefinition.getExtension()] = urls[0];
-                                    hasTextures = true;
-                                }
+                                textureDefinition.getCanvasImageUrls(function (urls) {
+                                    if (urls.length == 1) {
+                                        //textures will be uploaded async. The user should be notified about it!
+                                        var obj = {};
+                                        obj[id + '_' + textureDefinition.name + textureDefinition.getExtension()] = urls[0];
+                                        _this.$http.post(MaterialController.ServerUrl + "/textures", obj).success(function (worked) {
+                                            if (!worked['success']) {
+                                                _this.errorMessage = "error uploading the textures";
+                                            }
+                                        });
+                                    }
+                                });
                             }
                         });
-                        if (hasTextures) {
-                            _this.$http.post(MaterialController.ServerUrl + "/textures", binaries).success(function (worked) {
-                                if (!worked['success']) {
-                                    _this.errorMessage = "error uploading the textures";
-                                }
 
-                                //update UI
-                                _this.materialId = id;
-                            });
-                        } else {
-                            //update UI
-                            _this.materialId = id;
-                        }
+                        //update the UI
+                        _this.materialId = id;
                     });
                 });
             };
@@ -878,7 +873,6 @@ var RW;
                 this.errorMessage = null;
                 this.canvasService.appendMaterial(this.materialId, function () {
                     var material = _this.canvasService.getMaterial(_this.materialId);
-                    console.log(material);
 
                     //250 ms delay of material loading and scope apply so that the image can be loaded.
                     //This can be avoided wit using callbacks all the way from the texture object (which will require quite a lot of changes).
@@ -888,12 +882,12 @@ var RW;
                         if (_this.isMultiMaterial) {
                             _this._object.material.subMaterials[_this.multiMaterialPosition] = material;
                             _this.initMaterial(true, function () {
-                                console.log("init", _this.$scope.$apply());
+                                _this.$scope.$apply();
                             }, _this.multiMaterialPosition);
                         } else {
                             _this._object.material = material;
                             _this.initMaterial(true, function () {
-                                console.log("init", _this.$scope.$apply());
+                                _this.$scope.$apply();
                             });
                         }
                         //});
@@ -1538,7 +1532,6 @@ var RW;
                         if (this.textureVariable)
                             this._material[this.propertyInMaterial] = this.textureVariable;
                         this._isEnabled = true;
-                        console.log("here", this._isEnabled);
 
                         //update the canvas from the texture, is possible
                         this.updateCanvas();
@@ -1558,7 +1551,7 @@ var RW;
                 }
             };
 
-            TextureDefinition.prototype.getCanvasImageUrls = function () {
+            TextureDefinition.prototype.getCanvasImageUrls = function (onUpdateSuccess) {
                 var _this = this;
                 var urls = [];
                 if (!(this.textureVariable instanceof BABYLON.MirrorTexture || this.textureVariable instanceof BABYLON.CubeTexture)) {
@@ -1570,9 +1563,11 @@ var RW;
                             else
                                 urls.push(canvas.toDataURL("image/jpeg", 0.8));
                         }
+                        if (urls.length == _this.numberOfImages) {
+                            onUpdateSuccess(urls);
+                        }
                     });
                 }
-                return urls;
             };
 
             TextureDefinition.prototype.updateCanvas = function (onSuccess) {
