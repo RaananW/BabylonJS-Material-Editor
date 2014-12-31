@@ -77,19 +77,19 @@
             this.materialDefinisions = {}
         }
 
-        public initMaterialSections(object: BABYLON.AbstractMesh, multiMaterialPosition?: number): MaterialDefinition {
+        public initMaterialSections(object: BABYLON.AbstractMesh, forceNew : boolean, multiMaterialPosition?: number): MaterialDefinition {
 
             if (!this.materialDefinisions[object.id]) {
-                this.materialDefinisions[object.id] = []
+                this.materialDefinisions[object.id] = [];
             }
 
             if (angular.isDefined(multiMaterialPosition)) {
-                if (!this.materialDefinisions[object.id][multiMaterialPosition]) {
+                if (!this.materialDefinisions[object.id][multiMaterialPosition] || forceNew) {
                     this.materialDefinisions[object.id][multiMaterialPosition] = this.createNewMaterialDefinition(object, multiMaterialPosition);
                 } 
                 return this.materialDefinisions[object.id][multiMaterialPosition];
             } else {
-                if (!this.materialDefinisions[object.id][0]) {
+                if (!this.materialDefinisions[object.id][0] || forceNew) {
                     this.materialDefinisions[object.id][0] = this.createNewMaterialDefinition(object);
                 }
                 return this.materialDefinisions[object.id][0]; 

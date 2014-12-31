@@ -780,7 +780,9 @@ var RW;
                         _this.numberOfMaterials = 0;
                         _this.multiMaterialPosition = -1;
                     }
-                    _this.initMaterial(_this.multiMaterialPosition);
+
+                    //force should be false, it is however true while a multi-material object needs to be always initialized.
+                    _this.initMaterial(true, _this.multiMaterialPosition);
                 };
                 //for ng-repeat
                 this.getMaterialIndices = function () {
@@ -797,18 +799,14 @@ var RW;
 
                 $scope.$on("objectChanged", this.afterObjectChanged);
             }
-            MaterialController.prototype.initMaterial = function (position) {
+            MaterialController.prototype.initMaterial = function (forceNew, position) {
+                if (typeof forceNew === "undefined") { forceNew = false; }
                 //making sure it is undefined if it is not multi material.
                 if (this.isMultiMaterial) {
-                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, position);
-                    //this.$scope.material = <BABYLON.StandardMaterial> (<BABYLON.MultiMaterial> this._object.material).subMaterials[position];
+                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, forceNew, position);
                 } else {
-                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object);
-                    //this.materialService.initMaterialSections(this._object);
-                    //this.$scope.material = <BABYLON.StandardMaterial> this._object.material;
+                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, forceNew);
                 }
-                //this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
-                //this.$scope.materialSections = this.materialService.getMaterialSections();
             };
 
             MaterialController.prototype.exportMaterial = function () {
@@ -820,18 +818,6 @@ var RW;
                     resolve: {
                         materialDefinitions: function () {
                             return _this.materialService.getMaterialDefinisionsArray(_this._object.id);
-                            //if (!this.isMultiMaterial)
-                            //    return [this.$scope.materialSections];
-                            //else {
-                            //    var position = this.multiMaterialPosition;
-                            //    var matArray = []
-                            //    for (var i = 0; i < this.numberOfMaterials; i++) {
-                            //        this.initMaterial(i);
-                            //        matArray.push(this.$scope.materialSections);
-                            //    }
-                            //    this.initMaterial(position);
-                            //    return matArray;
-                            //}
                         }
                     }
                 });
@@ -869,10 +855,10 @@ var RW;
                     console.log(material);
                     if (_this.isMultiMaterial) {
                         _this._object.material.subMaterials[_this.multiMaterialPosition] = material;
-                        _this.initMaterial(_this.multiMaterialPosition);
+                        _this.initMaterial(true, _this.multiMaterialPosition);
                     } else {
                         _this._object.material = material;
-                        _this.initMaterial();
+                        _this.initMaterial(true);
                     }
                 }, function () {
                     _this.errorMessage = "error loading material, make sure the ID is correct";
@@ -1019,18 +1005,18 @@ var RW;
                 this.canvasService = canvasService;
                 this.materialDefinisions = {};
             }
-            MaterialService.prototype.initMaterialSections = function (object, multiMaterialPosition) {
+            MaterialService.prototype.initMaterialSections = function (object, forceNew, multiMaterialPosition) {
                 if (!this.materialDefinisions[object.id]) {
                     this.materialDefinisions[object.id] = [];
                 }
 
                 if (angular.isDefined(multiMaterialPosition)) {
-                    if (!this.materialDefinisions[object.id][multiMaterialPosition]) {
+                    if (!this.materialDefinisions[object.id][multiMaterialPosition] || forceNew) {
                         this.materialDefinisions[object.id][multiMaterialPosition] = this.createNewMaterialDefinition(object, multiMaterialPosition);
                     }
                     return this.materialDefinisions[object.id][multiMaterialPosition];
                 } else {
-                    if (!this.materialDefinisions[object.id][0]) {
+                    if (!this.materialDefinisions[object.id][0] || forceNew) {
                         this.materialDefinisions[object.id][0] = this.createNewMaterialDefinition(object);
                     }
                     return this.materialDefinisions[object.id][0];

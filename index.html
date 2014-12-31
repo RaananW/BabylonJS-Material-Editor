@@ -93,7 +93,7 @@
                         </div>
                         <div class="col-md-6 alphaDiv">
                             <div class="btn-group" ng-repeat="i in materialController.getMaterialIndices() track by $index">
-                                <label class="btn btn-primary" ng-model="materialController.multiMaterialPosition" ng-click="materialController.initMaterial($index)" btn-radio="{{$index}}">{{$index}}</label>
+                                <label class="btn btn-primary" ng-model="materialController.multiMaterialPosition" ng-click="materialController.initMaterial(false, $index)" btn-radio="{{$index}}">{{$index}}</label>
                             </div>
                         </div>
                     </div>

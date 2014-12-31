@@ -70,21 +70,17 @@
                 this.numberOfMaterials = 0;
                 this.multiMaterialPosition = -1;
             }
-            this.initMaterial(this.multiMaterialPosition);
+            //force should be false, it is however true while a multi-material object needs to be always initialized.
+            this.initMaterial(true, this.multiMaterialPosition);
         }
 
-        public initMaterial(position?:number) {
+        public initMaterial(forceNew:boolean = false, position?:number) {
             //making sure it is undefined if it is not multi material.
             if (this.isMultiMaterial) {
-                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, position);
-                //this.$scope.material = <BABYLON.StandardMaterial> (<BABYLON.MultiMaterial> this._object.material).subMaterials[position];
+                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, forceNew, position);
             } else {
-                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object);
-                //this.materialService.initMaterialSections(this._object);
-                //this.$scope.material = <BABYLON.StandardMaterial> this._object.material;
+                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, forceNew);
             }
-            //this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
-            //this.$scope.materialSections = this.materialService.getMaterialSections();
         }
 
         public exportMaterial() {
@@ -94,19 +90,7 @@
                 size: "lg",
                 resolve: {
                     materialDefinitions: () => {
-                        return this.materialService.getMaterialDefinisionsArray(this._object.id)
-                        //if (!this.isMultiMaterial)
-                        //    return [this.$scope.materialSections];
-                        //else {
-                        //    var position = this.multiMaterialPosition;
-                        //    var matArray = []
-                        //    for (var i = 0; i < this.numberOfMaterials; i++) {
-                        //        this.initMaterial(i);
-                        //        matArray.push(this.$scope.materialSections);
-                        //    }
-                        //    this.initMaterial(position);
-                        //    return matArray;
-                        //}
+                        return this.materialService.getMaterialDefinisionsArray(this._object.id);
                     }
                 }
             });
@@ -144,10 +128,10 @@
                 console.log(material);
                 if (this.isMultiMaterial) {
                     (<BABYLON.MultiMaterial> this._object.material).subMaterials[this.multiMaterialPosition] = material;
-                    this.initMaterial(this.multiMaterialPosition);
+                    this.initMaterial(true, this.multiMaterialPosition);
                 } else {
                     this._object.material = material;
-                    this.initMaterial();
+                    this.initMaterial(true);
                 }
                 
             }, () => {
