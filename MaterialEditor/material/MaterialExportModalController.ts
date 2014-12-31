@@ -38,6 +38,13 @@
                 exports.push(strings.join(";\n"));
 
                 if (this.materialDefinitions.length == 1) {
+                    
+                    if (this.materialDefinitions[0].material instanceof BABYLON.StandardMaterial) {
+                        var casted = <BABYLON.StandardMaterial> this.materialDefinitions[0].material;
+                        ["alpha", "backFaceCulling", "specularPower", "useSpecularOverAlpha", "useAlphaFromDiffuseTexture"].forEach((param) => {
+                            exports.push(this.$scope.materialVariableName + "." + param + " = " + casted[param]);
+                        });
+                    }
                     this.materialDefinitions[0].getMaterialSectionsArray().forEach((definition) => {
                         exports.push(this.materialDefinitions[0].materialSections[definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName, this.$scope.materialVariableName));
                     });
@@ -45,6 +52,12 @@
                     for (var i = 0; i < this.materialDefinitions.length; ++i) {
                         var matVarName = this.$scope.materialVariableName + "_" + i;
                         exports.push("var " + matVarName + " = new BABYLON.StandardMaterial('" + this.$scope.materialName + " " + i + "', " + this.$scope.sceneVariableName + ")");
+                        if (this.materialDefinitions[i].material instanceof BABYLON.StandardMaterial) {
+                            var casted = <BABYLON.StandardMaterial> this.materialDefinitions[0].material;
+                            ["alpha", "backFaceCulling", "specularPower", "useSpecularOverAlpha", "useAlphaFromDiffuseTexture"].forEach((param) => {
+                                exports.push(matVarName + "." + param + " = " + casted[param]);
+                            });
+                        }
                         this.materialDefinitions[0].getMaterialSectionsArray().forEach((definition) => {
                             exports.push(this.materialDefinitions[i].materialSections[definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName + " " + i, matVarName));
                         });

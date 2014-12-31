@@ -908,6 +908,12 @@ var RW;
                     exports.push(strings.join(";\n"));
 
                     if (_this.materialDefinitions.length == 1) {
+                        if (_this.materialDefinitions[0].material instanceof BABYLON.StandardMaterial) {
+                            var casted = _this.materialDefinitions[0].material;
+                            ["alpha", "backFaceCulling", "specularPower", "useSpecularOverAlpha", "useAlphaFromDiffuseTexture"].forEach(function (param) {
+                                exports.push(_this.$scope.materialVariableName + "." + param + " = " + casted[param]);
+                            });
+                        }
                         _this.materialDefinitions[0].getMaterialSectionsArray().forEach(function (definition) {
                             exports.push(_this.materialDefinitions[0].materialSections[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
                         });
@@ -915,6 +921,12 @@ var RW;
                         for (var i = 0; i < _this.materialDefinitions.length; ++i) {
                             var matVarName = _this.$scope.materialVariableName + "_" + i;
                             exports.push("var " + matVarName + " = new BABYLON.StandardMaterial('" + _this.$scope.materialName + " " + i + "', " + _this.$scope.sceneVariableName + ")");
+                            if (_this.materialDefinitions[i].material instanceof BABYLON.StandardMaterial) {
+                                var casted = _this.materialDefinitions[0].material;
+                                ["alpha", "backFaceCulling", "specularPower", "useSpecularOverAlpha", "useAlphaFromDiffuseTexture"].forEach(function (param) {
+                                    exports.push(matVarName + "." + param + " = " + casted[param]);
+                                });
+                            }
                             _this.materialDefinitions[0].getMaterialSectionsArray().forEach(function (definition) {
                                 exports.push(_this.materialDefinitions[i].materialSections[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName + " " + i, matVarName));
                             });
