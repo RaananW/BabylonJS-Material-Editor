@@ -13,7 +13,7 @@ module RW.TextureEditor {
 
         public textureVariable: BABYLON.BaseTexture;
 
-        constructor(public name: string, private _material: BABYLON.Material, private _connectedMesh : BABYLON.AbstractMesh) {
+        constructor(public name: string, private _material: BABYLON.Material, private _connectedMesh: BABYLON.AbstractMesh, onSuccess?: () => void) {
             this.propertyInMaterial = this.name.toLowerCase() + "Texture";
             this.canvasId = this.name + "Canvas";
             this.numberOfImages = 1;
@@ -27,8 +27,7 @@ module RW.TextureEditor {
                 } else {
                     this.babylonTextureType = BabylonTextureType.NORMAL;
                 }
-                this.initFromMaterial();
-                this.enabled(true);
+                this.initFromMaterial(onSuccess);
             } else {
                 this.babylonTextureType = BabylonTextureType.NORMAL;
                 this.enabled(false);
@@ -38,6 +37,9 @@ module RW.TextureEditor {
                 if (canvasElement) {
                     var context = canvasElement.getContext("2d");
                     context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                }
+                if (onSuccess) {
+                    onSuccess();
                 }
             }
         }
@@ -70,9 +72,15 @@ module RW.TextureEditor {
             }
         }
 
-        private initFromMaterial() {
+        private initFromMaterial(onSuccess?: () => void) {
             this.textureVariable = this._material[this.propertyInMaterial];
-            this.init = true;
+            this.updateCanvas(() => {
+                this.canvasUpdated();
+                this.enabled(true);
+                if (onSuccess) {
+                    onSuccess();
+                }
+            });
         }
 
         public coordinatesMode(mode: CoordinatesMode) {
@@ -136,6 +144,9 @@ module RW.TextureEditor {
                     if (this.textureVariable)
                         this._material[this.propertyInMaterial] = this.textureVariable;
                     this._isEnabled = true;
+                    console.log("here", this._isEnabled);
+                    //update the canvas from the texture, is possible
+                    this.updateCanvas();
                 } else {
                     this._material[this.propertyInMaterial] = null;
                     this._isEnabled = false;
@@ -150,6 +161,68 @@ module RW.TextureEditor {
             if (this._isEnabled) {
                 this._material[this.propertyInMaterial] = this.textureVariable;
             }
+        }
+
+        public getCanvasImageUrls() : string[] {
+            var urls = [];
+            if (!(this.textureVariable instanceof BABYLON.MirrorTexture || this.textureVariable instanceof BABYLON.CubeTexture)) {
+                this.updateCanvas(() => {
+                    for (var i = 0; i < this.numberOfImages; i++) {
+                        var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-" + i);
+                        if (this.getExtension() == ".png")
+                            urls.push(canvas.toDataURL("image/png", 0.8));
+                        else
+                            urls.push(canvas.toDataURL("image/jpeg", 0.8));
+                    }
+                });
+            }
+            return urls;
+        }
+
+        public updateCanvas(onSuccess?: () => void) {
+            if (this.textureVariable instanceof BABYLON.Texture) {
+                var texture = <BABYLON.Texture> this.textureVariable;
+                var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
+                this.updateCanvasFromUrl(canvas, texture.url, onSuccess);
+            } else if (this.textureVariable instanceof BABYLON.ExtendedCubeTexture) {
+                var cubeTexture = <BABYLON.ExtendedCubeTexture> this.textureVariable;
+                
+                for (var i = 0; i < this.numberOfImages; i++) {
+                    var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-" + i);
+                    this.updateCanvasFromUrl(canvas, cubeTexture.urls[i], onSuccess);
+                }
+            }
+        }
+
+        public updateCanvasFromUrl(canvas: HTMLCanvasElement, url : string, onSuccess? : () => void) {
+            //if (this.textureVariable instanceof BABYLON.Texture) {
+                //var text = <BABYLON.Texture> this.textureVariable;
+                //var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
+                var image = new Image();
+                image.onload = function () {
+                    var ctx = canvas.getContext("2d");
+                    //todo use canvas.style.height and width to keep aspect ratio
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
+                    var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
+                    var max = Math.max(width, height);
+                    if (width > height) {
+                        image.width *= height / image.height;
+                        image.height = height;
+                    } else {
+                        image.height *= width / image.width;
+                        image.width = width;
+                    }
+
+                    canvas.width = max;
+                    canvas.height = max;
+                    ctx.drawImage(image, 0, 0, max, max);
+                    if (onSuccess) {
+                        onSuccess();
+                    }
+                };
+                image.src = url;
+            //}
         }
 
         //TODO implement video support etc'. At the moment only dynamic is supported.

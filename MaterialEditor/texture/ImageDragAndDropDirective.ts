@@ -53,7 +53,7 @@
                     //	Create our FileReader and run the results through the render function.
                     var reader = new FileReader();
                     reader.onload = (e) => {
-                        render(e.target.result, canvas, function () {
+                        texture.updateCanvasFromUrl(canvas, e.target.result, function () {
                             if (scope.updateTexture) {
                                 scope.updateTexture({ $name: texture.name });
                             }

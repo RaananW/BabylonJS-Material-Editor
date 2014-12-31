@@ -5,21 +5,22 @@
         public materialSections: { [section: string]: MaterialDefinitionSection };
         public sectionNames: Array<string>;
 
-        constructor(object: BABYLON.AbstractMesh, material: BABYLON.Material) {
+        
+        constructor(object: BABYLON.AbstractMesh, material: BABYLON.Material, onSuccess?: () => void) {
             this.sectionNames = ["diffuse", "emissive", "ambient", "opacity", "specular", "reflection", "bump"]
-            this.initFromObject(object, material);
+            this.initFromObject(object, material, onSuccess);
         }
 
-        public initFromObject(object: BABYLON.AbstractMesh, material: BABYLON.Material) {
+        public initFromObject(object: BABYLON.AbstractMesh, material: BABYLON.Material, onSuccess?: () => void) {
             this.material = material;
             this.materialSections = {};
-            this.materialSections["diffuse"] = new MaterialDefinitionSection("diffuse", object, true, true, true, material);
-            this.materialSections["emissive"] = new MaterialDefinitionSection("emissive", object, true, true, true, material);
-            this.materialSections["ambient"] = new MaterialDefinitionSection("ambient", object, true, true, false, material);
-            this.materialSections["opacity"] = new MaterialDefinitionSection("opacity", object, false, true, true, material);
-            this.materialSections["specular"] = new MaterialDefinitionSection("specular", object, true, true, false, material);
-            this.materialSections["reflection"] = new MaterialDefinitionSection("reflection", object, false, true, true, material);
-            this.materialSections["bump"] = new MaterialDefinitionSection("bump", object, false, true, false, material);
+            this.materialSections["diffuse"] = new MaterialDefinitionSection("diffuse", object, true, true, true, material, onSuccess);
+            this.materialSections["emissive"] = new MaterialDefinitionSection("emissive", object, true, true, true, material, onSuccess);
+            this.materialSections["ambient"] = new MaterialDefinitionSection("ambient", object, true, true, false, material, onSuccess);
+            this.materialSections["opacity"] = new MaterialDefinitionSection("opacity", object, false, true, true, material, onSuccess);
+            this.materialSections["specular"] = new MaterialDefinitionSection("specular", object, true, true, false, material, onSuccess);
+            this.materialSections["reflection"] = new MaterialDefinitionSection("reflection", object, false, true, true, material, onSuccess);
+            this.materialSections["bump"] = new MaterialDefinitionSection("bump", object, false, true, false, material, onSuccess);
         }
 
         public getMaterialSectionsArray(): string[] {
@@ -77,7 +78,7 @@
             this.materialDefinisions = {}
         }
 
-        public initMaterialSections(object: BABYLON.AbstractMesh, forceNew : boolean, multiMaterialPosition?: number): MaterialDefinition {
+        public initMaterialSections(object: BABYLON.AbstractMesh, forceNew: boolean, onSuccess?: () => void, multiMaterialPosition?: number): MaterialDefinition {
 
             if (!this.materialDefinisions[object.id]) {
                 this.materialDefinisions[object.id] = [];
@@ -85,12 +86,12 @@
 
             if (angular.isDefined(multiMaterialPosition)) {
                 if (!this.materialDefinisions[object.id][multiMaterialPosition] || forceNew) {
-                    this.materialDefinisions[object.id][multiMaterialPosition] = this.createNewMaterialDefinition(object, multiMaterialPosition);
+                    this.materialDefinisions[object.id][multiMaterialPosition] = this.createNewMaterialDefinition(object, onSuccess, multiMaterialPosition);
                 } 
                 return this.materialDefinisions[object.id][multiMaterialPosition];
             } else {
                 if (!this.materialDefinisions[object.id][0] || forceNew) {
-                    this.materialDefinisions[object.id][0] = this.createNewMaterialDefinition(object);
+                    this.materialDefinisions[object.id][0] = this.createNewMaterialDefinition(object, onSuccess);
                 }
                 return this.materialDefinisions[object.id][0]; 
             }
@@ -100,7 +101,7 @@
             return this.materialDefinisions[objectId];
         }
 
-        private createNewMaterialDefinition(object: BABYLON.AbstractMesh, multiMaterialPosition?: number): MaterialDefinition {
+        private createNewMaterialDefinition(object: BABYLON.AbstractMesh, onSuccess: () => void, multiMaterialPosition?: number): MaterialDefinition {
             var material: BABYLON.Material;
             if (angular.isDefined(multiMaterialPosition)) {
                 material = (<BABYLON.MultiMaterial> object.material).subMaterials[multiMaterialPosition];
@@ -108,7 +109,7 @@
                 material = object.material;
             }
 
-            return new MaterialDefinition(object, material);
+            return new MaterialDefinition(object, material, onSuccess);
         }
 
         public exportAsBabylonScene(materialId: string, materialDefinition: MaterialDefinition) {

@@ -4,7 +4,7 @@
         public color: HexToBabylon;
         public fresnel: FresnelDefinition;
         public texture: TextureDefinition;
-        constructor(public name: string, private _object: BABYLON.AbstractMesh, public hasColor, public hasTexture, public hasFresnel, public material:BABYLON.Material) {
+        constructor(public name: string, private _object: BABYLON.AbstractMesh, public hasColor, public hasTexture, public hasFresnel, public material: BABYLON.Material, onSuccess?: () => void) {
             /*var material: BABYLON.Material;
             if (angular.isDefined(multiMaterialPosition)) {
                 material = (<BABYLON.MultiMaterial> _object.material).subMaterials[multiMaterialPosition];
@@ -15,7 +15,7 @@
                 this.color = new HexToBabylon(name, material);
             }
             if (hasTexture) {
-                this.texture = new TextureDefinition(name, material, _object);
+                this.texture = new TextureDefinition(name, material, _object, onSuccess);
             }
             if (hasFresnel) {
                 this.fresnel = new FresnelDefinition(name, material);
