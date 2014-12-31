@@ -195,35 +195,34 @@ module RW.TextureEditor {
             }
         }
 
-        public updateCanvasFromUrl(canvas: HTMLCanvasElement, url : string, onSuccess? : () => void) {
-            //if (this.textureVariable instanceof BABYLON.Texture) {
-                //var text = <BABYLON.Texture> this.textureVariable;
-                //var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
-                var image = new Image();
-                image.onload = function () {
-                    var ctx = canvas.getContext("2d");
-                    //todo use canvas.style.height and width to keep aspect ratio
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
-                    var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
-                    var max = Math.max(width, height);
-                    if (width > height) {
-                        image.width *= height / image.height;
-                        image.height = height;
-                    } else {
-                        image.height *= width / image.width;
-                        image.width = width;
-                    }
+        public updateCanvasFromUrl(canvas: HTMLCanvasElement, url: string, onSuccess?: () => void) {
+            if (!url) {
+                return;
+            }
+            var image = new Image();
+            image.onload = function () {
+                var ctx = canvas.getContext("2d");
+                //todo use canvas.style.height and width to keep aspect ratio
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                var width = BABYLON.Tools.GetExponantOfTwo(image.width, 1024);
+                var height = BABYLON.Tools.GetExponantOfTwo(image.height, 1024);
+                var max = Math.max(width, height);
+                if (width > height) {
+                    image.width *= height / image.height;
+                    image.height = height;
+                } else {
+                    image.height *= width / image.width;
+                    image.width = width;
+                }
 
-                    canvas.width = max;
-                    canvas.height = max;
-                    ctx.drawImage(image, 0, 0, max, max);
-                    if (onSuccess) {
-                        onSuccess();
-                    }
-                };
-                image.src = url;
-            //}
+                canvas.width = max;
+                canvas.height = max;
+                ctx.drawImage(image, 0, 0, max, max);
+                if (onSuccess) {
+                    onSuccess();
+                }
+            };
+            image.src = url;
         }
 
         //TODO implement video support etc'. At the moment only dynamic is supported.

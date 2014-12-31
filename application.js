@@ -614,7 +614,7 @@ var RW;
                     for (var i = 0; i < this._scene.meshes.length; i++) {
                         //if (i == objectPosition) continue;
                         var mesh = this._scene.meshes[i];
-                        mesh.isVisible = (!!mesh['lastEnabledState']);
+                        mesh.isVisible = (!!mesh['lastVisibleState']);
                     }
                 }
             };
@@ -1589,9 +1589,9 @@ var RW;
             };
 
             TextureDefinition.prototype.updateCanvasFromUrl = function (canvas, url, onSuccess) {
-                //if (this.textureVariable instanceof BABYLON.Texture) {
-                //var text = <BABYLON.Texture> this.textureVariable;
-                //var canvas = <HTMLCanvasElement> document.getElementById(this.canvasId + "-0");
+                if (!url) {
+                    return;
+                }
                 var image = new Image();
                 image.onload = function () {
                     var ctx = canvas.getContext("2d");
@@ -1617,7 +1617,6 @@ var RW;
                     }
                 };
                 image.src = url;
-                //}
             };
 
             //TODO implement video support etc'. At the moment only dynamic is supported.

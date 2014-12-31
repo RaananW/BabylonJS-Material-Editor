@@ -207,7 +207,7 @@
                 for (var i = 0; i < this._scene.meshes.length; i++) {
                     //if (i == objectPosition) continue;
                     var mesh = this._scene.meshes[i];
-                    mesh.isVisible = (!!mesh['lastEnabledState']);
+                    mesh.isVisible = (!!mesh['lastVisibleState']);
                 }
             }
         }
