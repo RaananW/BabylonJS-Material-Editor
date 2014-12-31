@@ -74,7 +74,7 @@
                 this.multiMaterialPosition = -1;
             }
             //force should be false, it is however true while a multi-material object needs to be always initialized.
-            this.initMaterial(force, () => { this.$scope.$apply(); }, this.multiMaterialPosition);
+            this.initMaterial(force, () => { this.$timeout(() => { this.$scope.$apply(); }) }, this.multiMaterialPosition);
         }
 
         public initMaterial(forceNew: boolean, onSuccess: () => void, position?:number) {

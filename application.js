@@ -786,7 +786,9 @@ var RW;
 
                     //force should be false, it is however true while a multi-material object needs to be always initialized.
                     _this.initMaterial(force, function () {
-                        _this.$scope.$apply();
+                        _this.$timeout(function () {
+                            _this.$scope.$apply();
+                        });
                     }, _this.multiMaterialPosition);
                 };
                 //for ng-repeat
