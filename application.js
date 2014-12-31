@@ -603,17 +603,18 @@ var RW;
                 if (enable) {
                     for (var i = 0; i < this._scene.meshes.length; i++) {
                         var mesh = this._scene.meshes[i];
-                        mesh['lastEnabledState'] = mesh.isEnabled;
-                        if (i == objectPosition)
-                            mesh.setEnabled(true);
-                        else
-                            mesh.setEnabled(false);
+
+                        mesh['lastVisibleState'] = mesh.isVisible;
+                        if (i == objectPosition) {
+                            mesh.isVisible = true;
+                        } else
+                            mesh.isVisible = false;
                     }
                 } else {
                     for (var i = 0; i < this._scene.meshes.length; i++) {
                         //if (i == objectPosition) continue;
                         var mesh = this._scene.meshes[i];
-                        mesh.setEnabled(!!mesh['lastEnabledState']);
+                        mesh.isVisible = (!!mesh['lastEnabledState']);
                     }
                 }
             };
