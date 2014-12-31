@@ -17,7 +17,7 @@
             'materialDefinitions'
         ];
 
-        constructor(private $scope: MaterialModalScope, private $modalInstance: any, private materialDefinitions: Array<Array<MaterialDefinitionSection>>) {
+        constructor(private $scope: MaterialModalScope, private $modalInstance: any, private materialDefinitions: Array<MaterialDefinition>) {
             $scope.materialName = "my awsome material";
             $scope.materialVariableName = "myAwsomeMaterial";
             $scope.sceneVariableName = "myWonderfulScene";            
@@ -38,15 +38,15 @@
                 exports.push(strings.join(";\n"));
 
                 if (this.materialDefinitions.length == 1) {
-                    Object.keys(this.materialDefinitions[0]).forEach((definition) => {
-                        exports.push(this.materialDefinitions[0][definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName, this.$scope.materialVariableName));
+                    this.materialDefinitions[0].getMaterialSectionsArray().forEach((definition) => {
+                        exports.push(this.materialDefinitions[0].materialSections[definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName, this.$scope.materialVariableName));
                     });
                 } else {
                     for (var i = 0; i < this.materialDefinitions.length; ++i) {
                         var matVarName = this.$scope.materialVariableName + "_" + i;
                         exports.push("var " + matVarName + " = new BABYLON.StandardMaterial('" + this.$scope.materialName + " " + i + "', " + this.$scope.sceneVariableName + ")");
-                        Object.keys(this.materialDefinitions[i]).forEach((definition) => {
-                            exports.push(this.materialDefinitions[i][definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName + " " + i, matVarName));
+                        this.materialDefinitions[0].getMaterialSectionsArray().forEach((definition) => {
+                            exports.push(this.materialDefinitions[i].materialSections[definition].exportToJavascript(this.$scope.sceneVariableName, this.$scope.materialName + " " + i, matVarName));
                         });
                         exports.push(this.$scope.materialVariableName + ".subMaterials[" + i + "] = " + matVarName);
                     }

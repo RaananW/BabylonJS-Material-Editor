@@ -99,26 +99,26 @@
                     </div>
                     <div class="col-md-12 alphaDiv">
                         <div class="btn-group">
-                            <label class="btn btn-primary" ng-model="material.wireframe" btn-checkbox>Wireframe</label>
-                            <label class="btn btn-primary" ng-model="material.pointsCloud" btn-checkbox>Points</label>
-                            <label class="btn btn-primary" ng-model="material.backFaceCulling" btn-checkbox>Back Face Culling</label>
-                            <label class="btn btn-primary" ng-model="material.useAlphaFromDiffuseTexture" btn-checkbox>Alpha From Diffuse Texture</label>
-                            <label class="btn btn-primary" ng-model="material.useSpecularOverAlpha" btn-checkbox>Specular Over Alpha</label>
+                            <label class="btn btn-primary" ng-model="materialDefinition.material.wireframe" btn-checkbox>Wireframe</label>
+                            <label class="btn btn-primary" ng-model="materialDefinition.material.pointsCloud" btn-checkbox>Points</label>
+                            <label class="btn btn-primary" ng-model="materialDefinition.material.backFaceCulling" btn-checkbox>Back Face Culling</label>
+                            <label class="btn btn-primary" ng-model="materialDefinition.material.useAlphaFromDiffuseTexture" btn-checkbox>Alpha From Diffuse Texture</label>
+                            <label class="btn btn-primary" ng-model="materialDefinition.material.useSpecularOverAlpha" btn-checkbox>Specular Over Alpha</label>
                             <!--<label class="btn btn-primary" ng-click="materialController.toFlat()">To Flat</label>-->
                         </div>
                     </div>
                     <div class="col-md-12 alphaDiv">
                         <tabset>
-                            <tab ng-repeat="section in sectionNames" heading="{{section.charAt(0).toUpperCase() + section.slice(1)}}" active="tab.active" disabled="tab.disabled">
-                                <div class="col-md-12 alphaDiv" ng-show="materialSections[section].hasColor">
+                            <tab ng-repeat="section in materialDefinition.sectionNames" heading="{{section.charAt(0).toUpperCase() + section.slice(1)}}" active="tab.active" disabled="tab.disabled">
+                                <div class="col-md-12 alphaDiv" ng-show="materialDefinition.materialSections[section].hasColor">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <h4>Color</h4>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="input-group">
-                                                <input colorpicker class="form-control" ng-model="materialSections[section].color.hex" ng-model-options="{ getterSetter: true }" type="text">
-                                                <div class="input-group-addon" ng-style="{'background-color': materialSections[section].color.hex()}"></div>
+                                                <input colorpicker class="form-control" ng-model="materialDefinition.materialSections[section].color.hex" ng-model-options="{ getterSetter: true }" type="text">
+                                                <div class="input-group-addon" ng-style="{'background-color': materialDefinition.materialSections[section].color.hex()}"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -127,36 +127,35 @@
                                             <h4>Speclar Power</h4>
                                         </div>
                                         <div class="col-md-6" ng-show="section=='specular'">
-                                            <input type="number" class="form-control" placeholder="Speclar Power" ng-model="material.specularPower">
+                                            <input type="number" class="form-control" placeholder="Speclar Power" ng-model="materialDefinition.material.specularPower">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12 alphaDiv" ng-show="materialSections[section].hasFresnel">
+                                <div class="col-md-12 alphaDiv" ng-show="materialDefinition.materialSections[section].hasFresnel">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <h4>Fresnel Parameters</h4>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].fresnel.fresnelVariable.isEnabled" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false">
-                                            </button>
+                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialDefinition.materialSections[section].fresnel.fresnelVariable.isEnabled" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false"></button>
                                         </div>
                                         <div class="col-md-12">
-                                            <div class="row" collapse="!materialSections[section].fresnel.fresnelVariable.isEnabled">
+                                            <div class="row" collapse="!materialDefinition.materialSections[section].fresnel.fresnelVariable.isEnabled">
                                                 <div class="col-md-6">
                                                     <form class="form-horizontal" role="form">
                                                         <div class="form-group">
                                                             <label class="col-sm-6">Left Color</label>
                                                             <div class="col-sm-6">
                                                                 <div class="input-group">
-                                                                    <input colorpicker class="form-control" ng-model="materialSections[section].fresnel.leftColor.hex" ng-model-options="{ getterSetter: true }" type="text">
-                                                                    <div class="input-group-addon" ng-style="{'background-color': materialSections[section].fresnel.leftColor.hex()}"></div>
+                                                                    <input colorpicker class="form-control" ng-model="materialDefinition.materialSections[section].fresnel.leftColor.hex" ng-model-options="{ getterSetter: true }" type="text">
+                                                                    <div class="input-group-addon" ng-style="{'background-color': materialDefinition.materialSections[section].fresnel.leftColor.hex()}"></div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
                                                             <label class="col-sm-6">Bias</label>
                                                             <div class="col-sm-6">
-                                                                <slider ng-model="materialSections[section].fresnel.fresnelVariable.bias"
+                                                                <slider ng-model="materialDefinition.materialSections[section].fresnel.fresnelVariable.bias"
                                                                         floor="0"
                                                                         ceiling="1"
                                                                         step="0.01"
@@ -172,15 +171,15 @@
                                                             <label class="col-sm-6">Right Color</label>
                                                             <div class="col-sm-6">
                                                                 <div class="input-group">
-                                                                    <input colorpicker class="form-control" ng-model="materialSections[section].fresnel.rightColor.hex" ng-model-options="{ getterSetter: true }" type="text">
-                                                                    <div class="input-group-addon" ng-style="{'background-color': materialSections[section].fresnel.rightColor.hex()}"></div>
+                                                                    <input colorpicker class="form-control" ng-model="materialDefinition.materialSections[section].fresnel.rightColor.hex" ng-model-options="{ getterSetter: true }" type="text">
+                                                                    <div class="input-group-addon" ng-style="{'background-color': materialDefinition.materialSections[section].fresnel.rightColor.hex()}"></div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
                                                             <label class="col-sm-6">Power</label>
                                                             <div class="col-sm-6">
-                                                                <input type="number" class="form-control" placeholder="Power" ng-model="materialSections[section].fresnel.fresnelVariable.power">
+                                                                <input type="number" class="form-control" placeholder="Power" ng-model="materialDefinition.materialSections[section].fresnel.fresnelVariable.power">
                                                             </div>
                                                         </div>
                                                     </form>
@@ -189,60 +188,59 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12 alphaDiv" ng-show="materialSections[section].hasTexture">
+                                <div class="col-md-12 alphaDiv" ng-show="materialDefinition.materialSections[section].hasTexture">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <h4>Texture</h4>
                                         </div>
                                         <div class="col-md-6">
-                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false">
-                                            </button> 
-                                            <button type="button" class="btn" ng-show="section=='reflection'" disable-enable-button extra-text="Mirror" ng-model="materialSections[section].texture.mirrorEnabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false"></button>
+                                            <button type="button" class="btn pull-right" disable-enable-button ng-model="materialDefinition.materialSections[section].texture.enabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false"></button>
+                                            <button type="button" class="btn" ng-show="section=='reflection'" disable-enable-button extra-text="Mirror" ng-model="materialDefinition.materialSections[section].texture.mirrorEnabled" ng-model-options="{ getterSetter: true }" btn-checkbox btn-checkbox-true="true" btn-checkbox-false="false"></button>
                                         </div>
-                                        <div class="col-md-12" ng-show="materialSections[section].texture._isEnabled">
+                                        <div class="col-md-12" ng-show="materialDefinition.materialSections[section].texture._isEnabled">
                                             <div class="row">
                                                 <div class="col-md-4">
-                                                    <texture-image tex="materialSections[section].texture" ng-hide="materialSections[section].texture.babylonTextureType === 4" on-update-texture="updateTexture($name)"></texture-image>
+                                                    <texture-image tex="materialDefinition.materialSections[section].texture" ng-hide="materialDefinition.materialSections[section].texture.babylonTextureType === 4" on-update-texture="updateTexture($name)"></texture-image>
                                                 </div>
                                                 <div class="col-md-8">
                                                     <div class="col-md-12" ng-show="section=='reflection'">
-                                                        <div class="alert alert-warning" role="alert" ng-show="materialSections[section].texture.babylonTextureType === 4">Mirror works best with planes. Will not works correctly with all others.</div>
+                                                        <div class="alert alert-warning" role="alert" ng-show="materialDefinition.materialSections[section].texture.babylonTextureType === 4">Mirror works best with planes. Will not works correctly with all others.</div>
                                                         <h4>Coordinates Mode</h4>
                                                         <div class="btn-group" role="group" aria-label="...">
-                                                            <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="0" class="btn btn-default">Explicit</button>
-                                                            <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="1" class="btn btn-default">Spherical</button>
-                                                            <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="2" class="btn btn-default">Planar</button>
-                                                            <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="3" class="btn btn-default">Cube</button>
-                                                            <button type="button" ng-model="materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="4" class="btn btn-default">Projection</button>
+                                                            <button type="button" ng-model="materialDefinition.materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="0" class="btn btn-default">Explicit</button>
+                                                            <button type="button" ng-model="materialDefinition.materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="1" class="btn btn-default">Spherical</button>
+                                                            <button type="button" ng-model="materialDefinition.materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="2" class="btn btn-default">Planar</button>
+                                                            <button type="button" ng-model="materialDefinition.materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="3" class="btn btn-default">Cube</button>
+                                                            <button type="button" ng-model="materialDefinition.materialSections[section].texture.coordinatesMode" ng-model-options="{ getterSetter: true }" btn-radio="4" class="btn btn-default">Projection</button>
                                                         </div>
                                                         <hr />
                                                     </div>
-                                                    <div class="col-md-12" ng-show="materialSections[section].texture.init">
+                                                    <div class="col-md-12" ng-show="materialDefinition.materialSections[section].texture.init">
                                                         <h4>U/V/W Settings</h4>
                                                         <div class="col-md-6">
                                                             <form class="form-horizontal" role="form">
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">U Scale</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="uScale" ng-model="materialSections[section].texture.textureVariable.uScale">
+                                                                        <input type="number" class="form-control" placeholder="uScale" ng-model="materialDefinition.materialSections[section].texture.textureVariable.uScale">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">V Scale</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="vScale" ng-model="materialSections[section].texture.textureVariable.vScale">
+                                                                        <input type="number" class="form-control" placeholder="vScale" ng-model="materialDefinition.materialSections[section].texture.textureVariable.vScale">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">U Offset</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="uOffset" ng-model="materialSections[section].texture.textureVariable.uOffset">
+                                                                        <input type="number" class="form-control" placeholder="uOffset" ng-model="materialDefinition.materialSections[section].texture.textureVariable.uOffset">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">V Offset</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="vOffset" ng-model="materialSections[section].texture.textureVariable.vOffset">
+                                                                        <input type="number" class="form-control" placeholder="vOffset" ng-model="materialDefinition.materialSections[section].texture.textureVariable.vOffset">
                                                                     </div>
                                                                 </div>
                                                             </form>
@@ -252,19 +250,19 @@
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">U Angle</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="U Angle" ng-model="materialSections[section].texture.textureVariable.uAng">
+                                                                        <input type="number" class="form-control" placeholder="U Angle" ng-model="materialDefinition.materialSections[section].texture.textureVariable.uAng">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">V Angle</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" placeholder="V Angle" ng-model="materialSections[section].texture.textureVariable.vAng">
+                                                                        <input type="number" class="form-control" placeholder="V Angle" ng-model="materialDefinition.materialSections[section].texture.textureVariable.vAng">
                                                                     </div>
                                                                 </div>
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">Level</label>
                                                                     <div class="col-sm-6">
-                                                                        <slider ng-model="materialSections[section].texture.textureVariable.level"
+                                                                        <slider ng-model="materialDefinition.materialSections[section].texture.textureVariable.level"
                                                                                 floor="0"
                                                                                 ceiling="1"
                                                                                 step="0.01"
@@ -275,17 +273,17 @@
                                                                 <div class="form-group">
                                                                     <label class="col-sm-6">Coordinates Index</label>
                                                                     <div class="col-sm-6">
-                                                                        <input type="number" class="form-control" laceholder="coordinates index" ng-model="materialSections[section].texture.textureVariable.coordinatesIndex">
+                                                                        <input type="number" class="form-control" laceholder="coordinates index" ng-model="materialDefinition.materialSections[section].texture.textureVariable.coordinatesIndex">
                                                                     </div>
                                                                 </div>
 
                                                             </form>
                                                         </div>
                                                         <div class="btn-group">
-                                                            <label class="btn btn-primary" ng-model="materialSections[section].texture.textureVariable.hasAlpha" btn-checkbox>Has Alpha</label>
-                                                            <label class="btn btn-primary" ng-model="materialSections[section].texture.textureVariable.getAlphaFromRGB" btn-checkbox>Get Alpha from RGB</label>
-                                                            <label class="btn btn-primary" ng-model="materialSections[section].texture.textureVariable.wrapU" btn-checkbox>Wrap U</label>
-                                                            <label class="btn btn-primary" ng-model="materialSections[section].texture.textureVariable.wrapV" btn-checkbox>Wrap V</label>
+                                                            <label class="btn btn-primary" ng-model="materialDefinition.materialSections[section].texture.textureVariable.hasAlpha" btn-checkbox>Has Alpha</label>
+                                                            <label class="btn btn-primary" ng-model="materialDefinition.materialSections[section].texture.textureVariable.getAlphaFromRGB" btn-checkbox>Get Alpha from RGB</label>
+                                                            <label class="btn btn-primary" ng-model="materialDefinition.materialSections[section].texture.textureVariable.wrapU" btn-checkbox>Wrap U</label>
+                                                            <label class="btn btn-primary" ng-model="materialDefinition.materialSections[section].texture.textureVariable.wrapV" btn-checkbox>Wrap V</label>
                                                         </div>
                                                     </div>
                                                 </div>

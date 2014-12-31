@@ -64,14 +64,14 @@
                 var count = this.$scope.indicesLeft < 0 ? 0 : this.$scope.indicesLeft;
                 new BABYLON.SubMesh(object.subMeshes.length, 0, object.getTotalVertices(),
                     this.$scope.totalNumberOfIndices - this.$scope.indicesLeft, count, object);
-                $scope.updateObject();
+                $scope.updateObject(false);
             }
 
             $scope.removeSubMesh = (index:number) => {
                 object.subMeshes.splice(index, 1);
-                $scope.updateObject();
+                $scope.updateObject(false);
             }
-            $scope.updateObject();
+            $scope.updateObject(false);
         }
 
     }

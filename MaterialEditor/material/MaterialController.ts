@@ -1,9 +1,10 @@
 ﻿module RW.TextureEditor {
 
     export interface MaterialScope extends ng.IScope {
-        material: BABYLON.StandardMaterial;
-        sectionNames: string[];
-        materialSections: { [section: string]: MaterialDefinitionSection };
+        //material: BABYLON.StandardMaterial;
+        materialDefinition: MaterialDefinition;
+        //sectionNames: string[];
+        //materialSections: { [section: string]: MaterialDefinitionSection };
         updateTexture(type): void;
         mirrorEnabled: boolean;
     }
@@ -47,7 +48,7 @@
             this.numberOfMaterials = 0;
             $scope.updateTexture = (type) => {
                 $scope.$apply(() => {
-                    $scope.materialSections[type].texture.canvasUpdated();
+                    $scope.materialDefinition.materialSections[type].texture.canvasUpdated();
                 });
             }
 
@@ -75,14 +76,15 @@
         public initMaterial(position?:number) {
             //making sure it is undefined if it is not multi material.
             if (this.isMultiMaterial) {
-                this.materialService.initMaterialSections(this._object, position);
-                this.$scope.material = <BABYLON.StandardMaterial> (<BABYLON.MultiMaterial> this._object.material).subMaterials[position];
+                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, position);
+                //this.$scope.material = <BABYLON.StandardMaterial> (<BABYLON.MultiMaterial> this._object.material).subMaterials[position];
             } else {
-                this.materialService.initMaterialSections(this._object);
-                this.$scope.material = <BABYLON.StandardMaterial> this._object.material;
+                this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object);
+                //this.materialService.initMaterialSections(this._object);
+                //this.$scope.material = <BABYLON.StandardMaterial> this._object.material;
             }
-            this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
-            this.$scope.materialSections = this.materialService.getMaterialSections();
+            //this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
+            //this.$scope.materialSections = this.materialService.getMaterialSections();
         }
 
         public exportMaterial() {
@@ -92,18 +94,19 @@
                 size: "lg",
                 resolve: {
                     materialDefinitions: () => {
-                        if (!this.isMultiMaterial)
-                            return [this.$scope.materialSections];
-                        else {
-                            var position = this.multiMaterialPosition;
-                            var matArray = []
-                            for (var i = 0; i < this.numberOfMaterials; i++) {
-                                this.initMaterial(i);
-                                matArray.push(this.$scope.materialSections);
-                            }
-                            this.initMaterial(position);
-                            return matArray;
-                        }
+                        return this.materialService.getMaterialDefinisionsArray(this._object.id)
+                        //if (!this.isMultiMaterial)
+                        //    return [this.$scope.materialSections];
+                        //else {
+                        //    var position = this.multiMaterialPosition;
+                        //    var matArray = []
+                        //    for (var i = 0; i < this.numberOfMaterials; i++) {
+                        //        this.initMaterial(i);
+                        //        matArray.push(this.$scope.materialSections);
+                        //    }
+                        //    this.initMaterial(position);
+                        //    return matArray;
+                        //}
                     }
                 }
             });
@@ -113,7 +116,7 @@
             //todo get ID from server
             this.$http.get(MaterialController.ServerUrl + "/getNextId").success((idObject) => {
                 var id = idObject['id'];
-                var material = this.materialService.exportAsBabylonScene(id, this.$scope.material);
+                var material = this.materialService.exportAsBabylonScene(id, this.$scope.materialDefinition);
                 //upload material object
                 this.$http.post(MaterialController.ServerUrl + "/materials", material).success((worked) => {
                     if (!worked['success']) {

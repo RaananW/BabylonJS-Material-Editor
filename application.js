@@ -683,14 +683,14 @@ var RW;
                 $scope.addSubMesh = function () {
                     var count = _this.$scope.indicesLeft < 0 ? 0 : _this.$scope.indicesLeft;
                     new BABYLON.SubMesh(object.subMeshes.length, 0, object.getTotalVertices(), _this.$scope.totalNumberOfIndices - _this.$scope.indicesLeft, count, object);
-                    $scope.updateObject();
+                    $scope.updateObject(false);
                 };
 
                 $scope.removeSubMesh = function (index) {
                     object.subMeshes.splice(index, 1);
-                    $scope.updateObject();
+                    $scope.updateObject(false);
                 };
-                $scope.updateObject();
+                $scope.updateObject(false);
             }
             ObjectSubMeshesController.$inject = [
                 '$scope',
@@ -791,7 +791,7 @@ var RW;
                 this.numberOfMaterials = 0;
                 $scope.updateTexture = function (type) {
                     $scope.$apply(function () {
-                        $scope.materialSections[type].texture.canvasUpdated();
+                        $scope.materialDefinition.materialSections[type].texture.canvasUpdated();
                     });
                 };
 
@@ -800,14 +800,15 @@ var RW;
             MaterialController.prototype.initMaterial = function (position) {
                 //making sure it is undefined if it is not multi material.
                 if (this.isMultiMaterial) {
-                    this.materialService.initMaterialSections(this._object, position);
-                    this.$scope.material = this._object.material.subMaterials[position];
+                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object, position);
+                    //this.$scope.material = <BABYLON.StandardMaterial> (<BABYLON.MultiMaterial> this._object.material).subMaterials[position];
                 } else {
-                    this.materialService.initMaterialSections(this._object);
-                    this.$scope.material = this._object.material;
+                    this.$scope.materialDefinition = this.materialService.initMaterialSections(this._object);
+                    //this.materialService.initMaterialSections(this._object);
+                    //this.$scope.material = <BABYLON.StandardMaterial> this._object.material;
                 }
-                this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
-                this.$scope.materialSections = this.materialService.getMaterialSections();
+                //this.$scope.sectionNames = this.materialService.getMaterialSectionsArray();
+                //this.$scope.materialSections = this.materialService.getMaterialSections();
             };
 
             MaterialController.prototype.exportMaterial = function () {
@@ -818,18 +819,19 @@ var RW;
                     size: "lg",
                     resolve: {
                         materialDefinitions: function () {
-                            if (!_this.isMultiMaterial)
-                                return [_this.$scope.materialSections];
-                            else {
-                                var position = _this.multiMaterialPosition;
-                                var matArray = [];
-                                for (var i = 0; i < _this.numberOfMaterials; i++) {
-                                    _this.initMaterial(i);
-                                    matArray.push(_this.$scope.materialSections);
-                                }
-                                _this.initMaterial(position);
-                                return matArray;
-                            }
+                            return _this.materialService.getMaterialDefinisionsArray(_this._object.id);
+                            //if (!this.isMultiMaterial)
+                            //    return [this.$scope.materialSections];
+                            //else {
+                            //    var position = this.multiMaterialPosition;
+                            //    var matArray = []
+                            //    for (var i = 0; i < this.numberOfMaterials; i++) {
+                            //        this.initMaterial(i);
+                            //        matArray.push(this.$scope.materialSections);
+                            //    }
+                            //    this.initMaterial(position);
+                            //    return matArray;
+                            //}
                         }
                     }
                 });
@@ -840,7 +842,7 @@ var RW;
                 //todo get ID from server
                 this.$http.get(MaterialController.ServerUrl + "/getNextId").success(function (idObject) {
                     var id = idObject['id'];
-                    var material = _this.materialService.exportAsBabylonScene(id, _this.$scope.material);
+                    var material = _this.materialService.exportAsBabylonScene(id, _this.$scope.materialDefinition);
 
                     //upload material object
                     _this.$http.post(MaterialController.ServerUrl + "/materials", material).success(function (worked) {
@@ -920,15 +922,15 @@ var RW;
                     exports.push(strings.join(";\n"));
 
                     if (_this.materialDefinitions.length == 1) {
-                        Object.keys(_this.materialDefinitions[0]).forEach(function (definition) {
-                            exports.push(_this.materialDefinitions[0][definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
+                        _this.materialDefinitions[0].getMaterialSectionsArray().forEach(function (definition) {
+                            exports.push(_this.materialDefinitions[0].materialSections[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName, _this.$scope.materialVariableName));
                         });
                     } else {
                         for (var i = 0; i < _this.materialDefinitions.length; ++i) {
                             var matVarName = _this.$scope.materialVariableName + "_" + i;
                             exports.push("var " + matVarName + " = new BABYLON.StandardMaterial('" + _this.$scope.materialName + " " + i + "', " + _this.$scope.sceneVariableName + ")");
-                            Object.keys(_this.materialDefinitions[i]).forEach(function (definition) {
-                                exports.push(_this.materialDefinitions[i][definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName + " " + i, matVarName));
+                            _this.materialDefinitions[0].getMaterialSectionsArray().forEach(function (definition) {
+                                exports.push(_this.materialDefinitions[i].materialSections[definition].exportToJavascript(_this.$scope.sceneVariableName, _this.$scope.materialName + " " + i, matVarName));
                             });
                             exports.push(_this.$scope.materialVariableName + ".subMaterials[" + i + "] = " + matVarName);
                         }
@@ -954,45 +956,43 @@ var RW;
 var RW;
 (function (RW) {
     (function (TextureEditor) {
-        var MaterialService = (function () {
-            function MaterialService($rootScope, canvasService) {
-                this.$rootScope = $rootScope;
-                this.canvasService = canvasService;
-                //this.initMaterialSections();
+        var MaterialDefinition = (function () {
+            function MaterialDefinition(object, material) {
+                this.sectionNames = ["diffuse", "emissive", "ambient", "opacity", "specular", "reflection", "bump"];
+                this.initFromObject(object, material);
             }
-            MaterialService.prototype.initMaterialSections = function (object, multiMaterialPosition) {
+            MaterialDefinition.prototype.initFromObject = function (object, material) {
+                this.material = material;
                 this.materialSections = {};
-                console.log(object.material);
-                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true, multiMaterialPosition);
-                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true, multiMaterialPosition);
-                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false, multiMaterialPosition);
-                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", object, false, true, true, multiMaterialPosition);
-                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", object, true, true, false, multiMaterialPosition);
-                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", object, false, true, true, multiMaterialPosition);
-                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", object, false, true, false, multiMaterialPosition);
+                this.materialSections["diffuse"] = new TextureEditor.MaterialDefinitionSection("diffuse", object, true, true, true, material);
+                this.materialSections["emissive"] = new TextureEditor.MaterialDefinitionSection("emissive", object, true, true, true, material);
+                this.materialSections["ambient"] = new TextureEditor.MaterialDefinitionSection("ambient", object, true, true, false, material);
+                this.materialSections["opacity"] = new TextureEditor.MaterialDefinitionSection("opacity", object, false, true, true, material);
+                this.materialSections["specular"] = new TextureEditor.MaterialDefinitionSection("specular", object, true, true, false, material);
+                this.materialSections["reflection"] = new TextureEditor.MaterialDefinitionSection("reflection", object, false, true, true, material);
+                this.materialSections["bump"] = new TextureEditor.MaterialDefinitionSection("bump", object, false, true, false, material);
             };
 
-            MaterialService.prototype.getMaterialSectionsArray = function () {
-                return Object.keys(this.materialSections);
+            MaterialDefinition.prototype.getMaterialSectionsArray = function () {
+                return this.sectionNames;
             };
 
-            MaterialService.prototype.getMaterialSections = function () {
+            MaterialDefinition.prototype.getMaterialSections = function () {
                 return this.materialSections;
             };
 
-            MaterialService.prototype.exportAsBabylonScene = function (materialId, originalMaterial) {
+            MaterialDefinition.prototype.exportAsBabylonScene = function (materialId) {
                 var _this = this;
-                var material = {
+                var materialObject = {
                     id: materialId,
-                    name: materialId,
-                    alpha: originalMaterial.alpha,
-                    backFaceCulling: originalMaterial.backFaceCulling,
-                    specularPower: originalMaterial.specularPower,
-                    useSpecularOverAlpha: originalMaterial.useSpecularOverAlpha,
-                    useAlphaFromDiffuseTexture: originalMaterial.useAlphaFromDiffuseTexture
+                    name: materialId
                 };
-                Object.keys(this.materialSections).forEach(function (definition) {
-                    _this.materialSections[definition].exportAsBabylonScene(material);
+                if (this.material instanceof BABYLON.StandardMaterial) {
+                    var casted = this.material;
+                    materialObject['alpha'] = casted.alpha, materialObject['backFaceCulling'] = casted.backFaceCulling, materialObject['specularPower'] = casted.specularPower, materialObject['useSpecularOverAlpha'] = casted.useSpecularOverAlpha, materialObject['useAlphaFromDiffuseTexture'] = casted.useAlphaFromDiffuseTexture;
+                }
+                this.getMaterialSectionsArray().forEach(function (definition) {
+                    _this.materialSections[definition].exportAsBabylonScene(materialObject);
                 });
 
                 //now make it babylon compatible
@@ -1001,13 +1001,59 @@ var RW;
                     "autoClear": true,
                     "clearColor": [0.2, 0.2, 0.3],
                     "gravity": [0, 0, -0.9],
-                    "materials": [material],
+                    "materials": [materialObject],
                     "lights": [],
                     "meshes": [],
                     "cameras": []
                 };
 
                 return babylonScene;
+            };
+            return MaterialDefinition;
+        })();
+        TextureEditor.MaterialDefinition = MaterialDefinition;
+
+        var MaterialService = (function () {
+            function MaterialService($rootScope, canvasService) {
+                this.$rootScope = $rootScope;
+                this.canvasService = canvasService;
+                this.materialDefinisions = {};
+            }
+            MaterialService.prototype.initMaterialSections = function (object, multiMaterialPosition) {
+                if (!this.materialDefinisions[object.id]) {
+                    this.materialDefinisions[object.id] = [];
+                }
+
+                if (angular.isDefined(multiMaterialPosition)) {
+                    if (!this.materialDefinisions[object.id][multiMaterialPosition]) {
+                        this.materialDefinisions[object.id][multiMaterialPosition] = this.createNewMaterialDefinition(object, multiMaterialPosition);
+                    }
+                    return this.materialDefinisions[object.id][multiMaterialPosition];
+                } else {
+                    if (!this.materialDefinisions[object.id][0]) {
+                        this.materialDefinisions[object.id][0] = this.createNewMaterialDefinition(object);
+                    }
+                    return this.materialDefinisions[object.id][0];
+                }
+            };
+
+            MaterialService.prototype.getMaterialDefinisionsArray = function (objectId) {
+                return this.materialDefinisions[objectId];
+            };
+
+            MaterialService.prototype.createNewMaterialDefinition = function (object, multiMaterialPosition) {
+                var material;
+                if (angular.isDefined(multiMaterialPosition)) {
+                    material = object.material.subMaterials[multiMaterialPosition];
+                } else {
+                    material = object.material;
+                }
+
+                return new MaterialDefinition(object, material);
+            };
+
+            MaterialService.prototype.exportAsBabylonScene = function (materialId, materialDefinition) {
+                return materialDefinition.exportAsBabylonScene(materialId);
             };
             MaterialService.$inject = [
                 '$rootScope',
@@ -1125,19 +1171,19 @@ var RW;
 (function (RW) {
     (function (TextureEditor) {
         var MaterialDefinitionSection = (function () {
-            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFresnel, multiMaterialPosition) {
+            function MaterialDefinitionSection(name, _object, hasColor, hasTexture, hasFresnel, material) {
                 this.name = name;
                 this._object = _object;
                 this.hasColor = hasColor;
                 this.hasTexture = hasTexture;
                 this.hasFresnel = hasFresnel;
-                this.multiMaterialPosition = multiMaterialPosition;
-                var material;
+                this.material = material;
+                /*var material: BABYLON.Material;
                 if (angular.isDefined(multiMaterialPosition)) {
-                    material = _object.material.subMaterials[multiMaterialPosition];
+                material = (<BABYLON.MultiMaterial> _object.material).subMaterials[multiMaterialPosition];
                 } else {
-                    material = _object.material;
-                }
+                material = _object.material;
+                }*/
                 if (hasColor) {
                     this.color = new TextureEditor.HexToBabylon(name, material);
                 }
