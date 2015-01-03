@@ -107,6 +107,7 @@
             });
         }
 
+        
         public initLight(lightType: LightType = LightType.HEMISPHERIC) {
             this._scene.lights.forEach((light) => {
                 light.dispose();
